@@ -184,6 +184,8 @@ def push_subscribe(request):
 def dashboard(request):
     memberships = request.user.family_memberships.select_related('family')
     membership = memberships.filter(family__memberships__role=Membership.Role.SENIOR).distinct().first() or memberships.first()
+    if not membership and request.user.is_staff:
+        return redirect('kontrola')
     family = membership.family if membership else None
     senior_membership = family.memberships.filter(role=Membership.Role.SENIOR).select_related('user').first() if family else None
     health_access = can_view_health(membership)

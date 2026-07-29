@@ -241,6 +241,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/kontrola/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'BRIGA+ OPERATIVNI CENTAR')
+        self.assertRedirects(self.client.get('/'), '/kontrola/')
 
     def test_bootstrap_owner_from_environment_is_platform_staff(self):
         with patch.dict(os.environ, {
