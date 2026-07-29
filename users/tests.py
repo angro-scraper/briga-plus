@@ -77,4 +77,14 @@ class DashboardFlowTests(TestCase):
         sos.refresh_from_db()
         self.assertIsNotNone(sos.resolved_at)
 
+    def test_sos_keeps_received_gps_coordinates(self):
+        self.client.post('/', {
+            'action': 'sos', 'latitude': '44.786568', 'longitude': '20.448922',
+            'note': 'Potrebna mi je pomoć.',
+        })
+        sos = EmergencyAlert.objects.get(family=self.family)
+        self.assertEqual(str(sos.latitude), '44.786568')
+        self.assertEqual(str(sos.longitude), '20.448922')
+        self.assertEqual(sos.note, 'Potrebna mi je pomoć.')
+
 # Create your tests here.
