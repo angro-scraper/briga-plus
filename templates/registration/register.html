@@ -1,1 +1,3 @@
-<!doctype html><html lang="sr"><head><meta charset="utf-8"><link rel="stylesheet" href="/static/app.css"><title>Nalog | Briga+</title></head><body class="auth"><main><h1>Briga<span>+</span></h1><h2>Napravite porodični prostor</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button>Nastavi</button></form><p><a href="/prijava/">Već imate nalog?</a></p></main></body></html>
+<!doctype html>
+<html lang="sr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f6b52"><link rel="stylesheet" href="/static/app.css"><title>Nalog | Briga+</title></head>
+<body class="auth"><main><p class="eyebrow">POČNITE OVDE</p><h1>Briga<span>+</span></h1><h2>Napravite porodični prostor.</h2><p>Kasnije dodajete osobu o kojoj se brinete i članove porodice.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button>Nastavi</button></form><p><a href="/prijava/">Već imate nalog?</a></p></main></body></html>

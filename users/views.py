@@ -97,7 +97,8 @@ def push_subscribe(request):
 
 @login_required
 def dashboard(request):
-    membership = request.user.family_memberships.select_related('family').first()
+    memberships = request.user.family_memberships.select_related('family')
+    membership = memberships.filter(family__memberships__role=Membership.Role.SENIOR).distinct().first() or memberships.first()
     family = membership.family if membership else None
     senior_membership = family.memberships.filter(role=Membership.Role.SENIOR).select_related('user').first() if family else None
     care_user = senior_membership.user if senior_membership and can_coordinate(membership) else request.user
@@ -208,7 +209,9 @@ def dashboard(request):
 
     now = timezone.now()
     week_start, week_end = now - timedelta(days=7), now + timedelta(days=7)
-    active_reminders = care_user.reminders.filter(completed_at__isnull=True)[:8]
+    active_reminders = care_user.reminders.filter(completed_at__isnull=True)
+    next_reminder = active_reminders.filter(scheduled_for__gte=now).first()
+    overdue_reminders = active_reminders.filter(scheduled_for__lt=now)
     tasks = family.tasks.all()[:8] if family else []
     care_week = {
         'checkins': care_user.checkins.filter(created_at__gte=week_start).count(),
@@ -220,12 +223,13 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', {
         'family': family, 'membership': membership, 'care_person': care_user,
-        'last_checkin': care_user.checkins.first(), 'reminders': active_reminders, 'tasks': tasks,
-        'messages': family.messages.select_related('sender').all()[:8] if family else [],
+        'last_checkin': care_user.checkins.first(), 'reminders': active_reminders[:8], 'next_reminder': next_reminder,
+        'overdue_reminders': overdue_reminders[:4], 'tasks': tasks,
+        'chat_messages': family.messages.select_related('sender').all()[:8] if family else [],
         'voice_messages': family.voice_messages.select_related('sender').all()[:8] if family else [],
         'sos_active': family.emergencies.filter(resolved_at__isnull=True).first() if family else None,
         'members': family.memberships.select_related('user').all() if family else [],
         'contacts': family.emergency_contacts.all() if family else [],
-        'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'care_week': care_week,
+        'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'unread_alert_count': request.user.alerts.filter(read_at__isnull=True).count(), 'care_week': care_week,
         'push_public_key': settings.VAPID_PUBLIC_KEY,
     })

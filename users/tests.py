@@ -104,4 +104,14 @@ class DashboardFlowTests(TestCase):
         self.assertTrue(next_reminder.repeat_daily)
         self.assertGreater(next_reminder.scheduled_for, timezone.now())
 
+    def test_dashboard_prefers_family_that_has_care_person(self):
+        from families.models import Family
+        unrelated = Family.objects.create(name='Druga porodica')
+        Membership.objects.create(user=self.user, family=unrelated, role=Membership.Role.ADMIN)
+        senior = User.objects.create_user('baka', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        response = self.client.get('/')
+        self.assertEqual(response.context['family'], self.family)
+        self.assertEqual(response.context['care_person'], senior)
+
 # Create your tests here.
