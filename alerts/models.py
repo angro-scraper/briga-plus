@@ -1,0 +1,17 @@
+from django.conf import settings
+from django.db import models
+
+class Alert(models.Model):
+    class Kind(models.TextChoices):
+        SOS = 'sos', 'SOS'
+        CHECKIN = 'checkin', 'Propuštena potvrda'
+        REMINDER = 'reminder', 'Podsetnik'
+        MESSAGE = 'message', 'Poruka'
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='alerts')
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    title = models.CharField(max_length=160)
+    body = models.CharField(max_length=500, blank=True)
+    url = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    class Meta: ordering = ['-created_at']

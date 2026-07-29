@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: briga-plus
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn config.wsgi:application
+    healthCheckPath: /zdravlje/
+    envVars:
+      - key: BRIGA_DEBUG
+        value: "0"
+      - key: BRIGA_SECRET_KEY
+        generateValue: true
+      - key: BRIGA_ALLOWED_HOSTS
+        value: briga-plus.onrender.com
+      - key: BRIGA_CSRF_TRUSTED_ORIGINS
+        value: https://briga-plus.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: briga-plus-db
+          property: connectionString
+databases:
+  - name: briga-plus-db
+    plan: free
+    databaseName: briga_plus
+    user: briga_plus

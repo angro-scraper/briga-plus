@@ -1,0 +1,12 @@
+{
+  "name": "Briga+",
+  "short_name": "Briga+",
+  "description": "Porodična podrška i briga na jednom mestu.",
+  "lang": "sr-Latn",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7faf8",
+  "theme_color": "#16735b",
+  "icons": []
+}
