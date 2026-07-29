@@ -60,3 +60,19 @@ class HealthLog(models.Model):
 
     class Meta:
         ordering = ['-recorded_at']
+
+
+class MoodEntry(models.Model):
+    class Mood(models.TextChoices):
+        GOOD = 'good', 'Dobro'
+        TIRED = 'tired', 'Umorno'
+        LOW = 'low', 'Loše'
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mood_entries')
+    mood = models.CharField(max_length=12, choices=Mood.choices)
+    note = models.CharField(max_length=240, blank=True)
+    recorded_on = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-recorded_on']
+        constraints = [models.UniqueConstraint(fields=['user', 'recorded_on'], name='one_mood_per_day')]

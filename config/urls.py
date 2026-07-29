@@ -19,11 +19,12 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import dashboard, register, service_worker, health, protected_media, push_subscribe
+from users.views import dashboard, register, senior_easy, service_worker, health, protected_media, push_subscribe
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', dashboard, name='pocetna'),
+    path('jednostavno/', senior_easy, name='jednostavno'),
     path('prijava/', auth_views.LoginView.as_view(), name='prijava'),
     path('odjava/', auth_views.LogoutView.as_view(), name='odjava'),
     path('registracija/', register, name='registracija'),

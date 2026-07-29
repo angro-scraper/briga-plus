@@ -15,9 +15,9 @@ from django.views.decorators.http import require_POST
 from alerts.models import Alert, PushSubscription
 from alerts.push import send_push_alert
 from caretasks.models import CareTask
-from checkins.models import CheckIn, DailyRoutine, HealthLog, RoutineCompletion
+from checkins.models import CheckIn, DailyRoutine, HealthLog, MoodEntry, RoutineCompletion
 from emergencies.models import EmergencyAlert
-from families.models import EmergencyContact, Family, Membership
+from families.models import CareDocument, CareProfile, EmergencyContact, Family, FamilyVisit, Membership
 from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
 
@@ -61,17 +61,21 @@ def health(request):
 def protected_media(request, path):
     reminder = Reminder.objects.filter(package_photo=path).select_related('user').first()
     voice = VoiceMessage.objects.filter(audio=path).select_related('family').first()
+    document = CareDocument.objects.filter(document=path).select_related('user').first()
     if reminder:
         family_ids = request.user.family_memberships.values_list('family_id', flat=True)
         allowed = reminder.user_id == request.user.id or Membership.objects.filter(family_id__in=family_ids, user=reminder.user).exists()
     elif voice:
         allowed = voice.family.memberships.filter(user=request.user).exists()
+    elif document:
+        family_ids = request.user.family_memberships.values_list('family_id', flat=True)
+        allowed = document.user_id == request.user.id or Membership.objects.filter(family_id__in=family_ids, user=document.user).exists()
     else:
         allowed = False
     if not allowed:
         raise Http404
     try:
-        return FileResponse(open(settings.MEDIA_ROOT / path, 'rb'))
+        return FileResponse(open(settings.MEDIA_ROOT / path, 'rb'), as_attachment=bool(document))
     except OSError as error:
         raise Http404 from error
 
@@ -125,6 +129,52 @@ def dashboard(request):
                 DailyRoutine.objects.create(user=care_user, title=title, category=category, part_of_day=part_of_day)
         elif action == 'routine_delete' and family and can_coordinate(membership):
             DailyRoutine.objects.filter(pk=request.POST.get('routine_id'), user=care_user).update(active=False)
+        elif action == 'routine_defaults' and family and can_coordinate(membership):
+            for title, category, part in [
+                ('Popiti čašu vode', DailyRoutine.Category.WELLBEING, DailyRoutine.PartOfDay.MORNING),
+                ('Pojesti redovan obrok', DailyRoutine.Category.WELLBEING, DailyRoutine.PartOfDay.DAY),
+                ('Kratka šetnja ili razgibavanje', DailyRoutine.Category.MOVEMENT, DailyRoutine.PartOfDay.DAY),
+            ]:
+                DailyRoutine.objects.get_or_create(user=care_user, title=title, defaults={'category': category, 'part_of_day': part})
+        elif action == 'mood' and family and (membership.role == Membership.Role.SENIOR or can_coordinate(membership)):
+            mood = request.POST.get('mood')
+            if mood in MoodEntry.Mood.values:
+                MoodEntry.objects.update_or_create(
+                    user=care_user, recorded_on=timezone.localdate(),
+                    defaults={'mood': mood, 'note': request.POST.get('note', '').strip()[:240]},
+                )
+        elif action == 'care_profile' and family and can_coordinate(membership):
+            profile, _ = CareProfile.objects.get_or_create(user=care_user)
+            profile.allergies = request.POST.get('allergies', '').strip()[:500]
+            profile.diagnoses = request.POST.get('diagnoses', '').strip()[:700]
+            profile.doctor_name = request.POST.get('doctor_name', '').strip()[:120]
+            profile.doctor_phone = request.POST.get('doctor_phone', '').strip()[:32]
+            profile.health_card_number = request.POST.get('health_card_number', '').strip()[:80]
+            profile.save()
+        elif action == 'document' and family and can_coordinate(membership):
+            uploaded = request.FILES.get('document')
+            category = request.POST.get('category', CareDocument.Category.OTHER)
+            allowed_types = {'application/pdf', 'image/jpeg', 'image/png', 'image/webp'}
+            if uploaded and uploaded.size <= 10 * 1024 * 1024 and uploaded.content_type in allowed_types and category in CareDocument.Category.values:
+                CareDocument.objects.create(user=care_user, uploaded_by=request.user, title=request.POST.get('title', '').strip()[:160] or uploaded.name[:160], category=category, document=uploaded)
+            else:
+                messages.error(request, 'Dokument mora biti PDF ili fotografija manja od 10 MB.')
+        elif action == 'visit' and family and can_coordinate(membership):
+            try:
+                scheduled_for = timezone.datetime.fromisoformat(request.POST.get('scheduled_for', ''))
+                if timezone.is_naive(scheduled_for):
+                    scheduled_for = timezone.make_aware(scheduled_for)
+            except ValueError:
+                scheduled_for = None
+            visitor = family.memberships.filter(user_id=request.POST.get('visitor_id')).select_related('user').first()
+            if visitor and scheduled_for:
+                FamilyVisit.objects.create(family=family, visitor=visitor.user, scheduled_for=scheduled_for, note=request.POST.get('note', '').strip()[:300])
+        elif action == 'visit_status' and family and can_coordinate(membership):
+            status = request.POST.get('status')
+            visit = family.visits.filter(pk=request.POST.get('visit_id')).first()
+            if visit and status in FamilyVisit.Status.values and (visit.visitor_id == request.user.id or membership.role == Membership.Role.ADMIN):
+                visit.status = status
+                visit.save(update_fields=['status'])
         elif action == 'health_log' and family and (membership.role == Membership.Role.SENIOR or can_coordinate(membership)):
             kind = request.POST.get('kind')
             value = request.POST.get('value', '').strip()[:80]
@@ -284,6 +334,7 @@ def dashboard(request):
     for routine in routines:
         routine.completed_today = routine.id in completed_routine_ids
     safety_membership = family.memberships.filter(role=Membership.Role.SENIOR).first() if family else None
+    care_profile = CareProfile.objects.filter(user=care_user).first()
     care_week = {
         'checkins': care_user.checkins.filter(created_at__gte=week_start).count(),
         'taken': care_user.reminders.filter(completed_at__gte=week_start).count(),
@@ -312,5 +363,25 @@ def dashboard(request):
         'contacts': family.emergency_contacts.all() if family else [],
         'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'unread_alert_count': request.user.alerts.filter(read_at__isnull=True).count(), 'care_week': care_week, 'week_details': week_details,
         'routines': routines, 'routine_done_count': len(completed_routine_ids), 'health_logs': care_user.health_logs.all()[:8], 'safety_membership': safety_membership,
+        'mood_today': MoodEntry.objects.filter(user=care_user, recorded_on=timezone.localdate()).first(), 'recent_moods': care_user.mood_entries.all()[:7],
+        'care_profile': care_profile, 'documents': care_user.care_documents.all()[:8], 'visits': family.visits.select_related('visitor').filter(scheduled_for__gte=now - timedelta(days=1))[:8] if family else [],
         'push_public_key': settings.VAPID_PUBLIC_KEY,
+    })
+
+
+@login_required
+def senior_easy(request):
+    membership = request.user.family_memberships.filter(role=Membership.Role.SENIOR).select_related('family').first()
+    if not membership:
+        return redirect('pocetna')
+    now = timezone.now()
+    routines = list(request.user.daily_routines.filter(active=True))
+    completed = set(RoutineCompletion.objects.filter(routine__user=request.user, completed_on=timezone.localdate()).values_list('routine_id', flat=True))
+    for routine in routines:
+        routine.completed_today = routine.id in completed
+    return render(request, 'senior_easy.html', {
+        'family': membership.family, 'contacts': membership.family.emergency_contacts.all(), 'routines': routines,
+        'next_reminder': request.user.reminders.filter(completed_at__isnull=True, scheduled_for__gte=now).first(),
+        'mood_today': MoodEntry.objects.filter(user=request.user, recorded_on=timezone.localdate()).first(),
+        'next_visit': membership.family.visits.select_related('visitor').filter(scheduled_for__gte=now).first(),
     })

@@ -7,7 +7,9 @@ from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
 from caretasks.models import CareTask
 from emergencies.models import EmergencyAlert
-from families.models import EmergencyContact
+from families.models import CareDocument, CareProfile, EmergencyContact, FamilyVisit
+from checkins.models import MoodEntry
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 class DashboardFlowTests(TestCase):
     def setUp(self):
@@ -150,5 +152,43 @@ class DashboardFlowTests(TestCase):
         self.client.post('/', {'action': 'task_claim', 'task_id': task.id})
         task.refresh_from_db()
         self.assertEqual(task.assignee, self.user)
+
+    def test_care_profile_mood_and_visit_flow(self):
+        senior = User.objects.create_user('deda', password='bezbedna-lozinka-123')
+        caregiver = User.objects.create_user('ivana', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+        self.client.post('/', {'action': 'care_profile', 'allergies': 'Penicilin', 'doctor_name': 'Dr Ana'})
+        self.assertEqual(CareProfile.objects.get(user=senior).allergies, 'Penicilin')
+        self.client.force_login(senior)
+        self.client.post('/', {'action': 'mood', 'mood': 'good'})
+        self.assertEqual(MoodEntry.objects.get(user=senior).mood, 'good')
+        self.client.force_login(self.user)
+        self.client.post('/', {'action': 'visit', 'visitor_id': caregiver.id, 'scheduled_for': '2026-08-01T10:00', 'note': 'Donosi lekove'})
+        visit = FamilyVisit.objects.get(family=self.family)
+        self.assertEqual(visit.visitor, caregiver)
+        self.client.force_login(caregiver)
+        self.client.post('/', {'action': 'visit_status', 'visit_id': visit.id, 'status': 'arrived'})
+        visit.refresh_from_db()
+        self.assertEqual(visit.status, 'arrived')
+
+    def test_document_vault_is_limited_to_family(self):
+        senior = User.objects.create_user('baka_dok', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        upload = SimpleUploadedFile('nalaz.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        self.client.post('/', {'action': 'document', 'title': 'Nalaz', 'category': 'report', 'document': upload})
+        document = CareDocument.objects.get(user=senior)
+        response = self.client.get(document.document.url)
+        self.assertEqual(response.status_code, 200)
+        stranger = User.objects.create_user('stranac', password='bezbedna-lozinka-123')
+        self.client.force_login(stranger)
+        self.assertEqual(self.client.get(document.document.url).status_code, 404)
+
+    def test_senior_can_open_simple_screen(self):
+        senior = User.objects.create_user('olga', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+        response = self.client.get('/jednostavno/')
+        self.assertEqual(response.status_code, 200)
 
 # Create your tests here.

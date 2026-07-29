@@ -34,3 +34,47 @@ class EmergencyContact(models.Model):
         ordering = ['priority', 'name']
 
     def __str__(self): return f'{self.name} ({self.phone})'
+
+
+class CareProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='care_profile')
+    allergies = models.CharField(max_length=500, blank=True)
+    diagnoses = models.CharField(max_length=700, blank=True)
+    doctor_name = models.CharField(max_length=120, blank=True)
+    doctor_phone = models.CharField(max_length=32, blank=True)
+    health_card_number = models.CharField(max_length=80, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class FamilyVisit(models.Model):
+    class Status(models.TextChoices):
+        PLANNED = 'planned', 'Planirano'
+        EN_ROUTE = 'en_route', 'Krećem'
+        ARRIVED = 'arrived', 'Stigao/la sam'
+        COMPLETED = 'completed', 'Završeno'
+    family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='visits')
+    visitor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='family_visits')
+    scheduled_for = models.DateTimeField()
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PLANNED)
+    note = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['scheduled_for']
+
+
+class CareDocument(models.Model):
+    class Category(models.TextChoices):
+        REPORT = 'report', 'Nalaz'
+        DISCHARGE = 'discharge', 'Otpusna lista'
+        PRESCRIPTION = 'prescription', 'Recept / terapija'
+        OTHER = 'other', 'Drugo'
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='care_documents')
+    title = models.CharField(max_length=160)
+    category = models.CharField(max_length=16, choices=Category.choices, default=Category.OTHER)
+    document = models.FileField(upload_to='care_documents/')
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name='uploaded_care_documents')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
