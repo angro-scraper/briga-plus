@@ -20,7 +20,7 @@
 <header class="topbar">
   <a class="brand" href="/" aria-label="Briga+ početna"><span class="brand-mark"><img src="/static/briga-mark.svg" alt=""></span><span class="brand-word">Briga<span class="brand-plus">+</span></span></a>
   <nav aria-label="Glavna navigacija"><a href="#danas">Danas</a><a href="#alati">Alati</a></nav>
-  <div class="profile"><button id="senior-mode-toggle" class="text-control" type="button">Veći prikaz</button><button id="contrast-toggle" class="text-control" type="button">Jači kontrast</button><span class="user-name">{{ user.first_name|default:user.username }}</span><a class="logout" href="/odjava/">Odjava</a></div>
+  <div class="profile"><button id="senior-mode-toggle" class="text-control" type="button">Veći prikaz</button><button id="contrast-toggle" class="text-control" type="button">Jači kontrast</button>{% if user.is_staff %}<a class="text-control" href="/kontrola/">Kontrola</a>{% endif %}<span class="user-name">{{ user.first_name|default:user.username }}</span><a class="logout" href="/odjava/">Odjava</a></div>
 </header>
 
 <main class="app-shell">

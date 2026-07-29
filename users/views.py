@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.http import FileResponse, Http404, JsonResponse
@@ -107,6 +108,32 @@ def service_worker(request):
 
 def health(request):
     return JsonResponse({'status': 'ok', 'application': 'Briga+', 'version': '0.5.0'})
+
+
+@staff_member_required(login_url='prijava')
+def control_center(request):
+    if request.method == 'POST' and request.POST.get('action') == 'platform_resolve_emergency':
+        resolved = EmergencyAlert.objects.filter(
+            pk=request.POST.get('emergency_id'), resolved_at__isnull=True,
+        ).update(resolved_at=timezone.now())
+        if resolved:
+            messages.success(request, 'Hitni slučaj je označen kao rešen u platformskom centru.')
+
+    now = timezone.now()
+    active_emergencies = EmergencyAlert.objects.filter(resolved_at__isnull=True).select_related('family', 'raised_by')[:12]
+    return render(request, 'control_center.html', {
+        'summary': {
+            'users': User.objects.count(),
+            'families': Family.objects.count(),
+            'memberships': Membership.objects.count(),
+            'open_invites': FamilyInvite.objects.filter(accepted_at__isnull=True, expires_at__gt=now).count(),
+            'active_sos': EmergencyAlert.objects.filter(resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS).count(),
+            'push_devices': PushSubscription.objects.count(),
+        },
+        'active_emergencies': active_emergencies,
+        'latest_invites': FamilyInvite.objects.select_related('family', 'created_by').all()[:8],
+        'recent_families': Family.objects.order_by('-created_at')[:8],
+    })
 
 
 @login_required

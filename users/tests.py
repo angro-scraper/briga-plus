@@ -229,4 +229,13 @@ class DashboardFlowTests(TestCase):
         member.refresh_from_db()
         self.assertEqual(member.access_level, Membership.AccessLevel.FULL)
 
+    def test_platform_control_center_is_staff_only(self):
+        response = self.client.get('/kontrola/')
+        self.assertEqual(response.status_code, 302)
+        staff = User.objects.create_user('vlasnik', password='bezbedna-lozinka-123', is_staff=True)
+        self.client.force_login(staff)
+        response = self.client.get('/kontrola/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'BRIGA+ OPERATIVNI CENTAR')
+
 # Create your tests here.
