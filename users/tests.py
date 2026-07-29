@@ -1,4 +1,8 @@
+import os
+from unittest.mock import patch
+
 from django.test import TestCase
+from django.core.management import call_command
 from django.utils import timezone
 from django.contrib.auth.models import User
 from families.models import Membership
@@ -237,5 +241,16 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/kontrola/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'BRIGA+ OPERATIVNI CENTAR')
+
+    def test_bootstrap_owner_from_environment_is_platform_staff(self):
+        with patch.dict(os.environ, {
+            'BRIGA_OWNER_USERNAME': 'glavni_vlasnik',
+            'BRIGA_OWNER_PASSWORD': 'bezbedna-lozinka-123',
+        }, clear=False):
+            call_command('bootstrap_owner')
+        owner = User.objects.get(username='glavni_vlasnik')
+        self.assertTrue(owner.is_staff)
+        self.assertTrue(owner.is_superuser)
+        self.assertTrue(owner.check_password('bezbedna-lozinka-123'))
 
 # Create your tests here.
