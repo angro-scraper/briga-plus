@@ -22,19 +22,19 @@
 
   {% for message in messages %}<div class="toast {{ message.tags }}">{{ message }}</div>{% endfor %}
   {% if sos_active %}
-    <section class="sos-alert"><div><b>Aktivan SOS</b><p>{{ sos_active.raised_by.username }} je poslao/la zahtev za pomoć.</p></div>{% if sos_active.latitude %}<a class="button light" target="_blank" href="https://www.google.com/maps?q={{ sos_active.latitude }},{{ sos_active.longitude }}">Otvori lokaciju</a>{% endif %}</section>
+    <section class="sos-alert"><div><b>Aktivan SOS</b><p>{{ sos_active.raised_by.username }} je poslao/la zahtev za pomoć.{% if sos_active.note %} Poruka: {{ sos_active.note }}{% endif %}</p></div><div class="sos-actions">{% if sos_active.latitude %}<a class="button light" target="_blank" href="https://www.google.com/maps?q={{ sos_active.latitude }},{{ sos_active.longitude }}">Otvori lokaciju</a>{% endif %}{% if membership.role != 'senior' %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="sos_resolve"><input type="hidden" name="sos_id" value="{{ sos_active.id }}"><button class="button light">Pomoć je stigla</button></form>{% endif %}</div></section>
   {% endif %}
 
   <section class="status-grid">
     <article class="panel checkin">
       <div class="panel-head"><div><span class="icon">♡</span><h2>Dnevna potvrda</h2></div><span class="badge">{{ care_person.first_name|default:care_person.username }}</span></div>
       {% if last_checkin %}<p class="status-good">✓ Potvrđeno</p><p class="muted">{{ last_checkin.created_at|date:"d.m. Y. u H:i" }}{% if last_checkin.note %} · {{ last_checkin.note }}{% endif %}</p>{% else %}<p class="status-warn">Čekamo potvrdu da je sve u redu.</p>{% endif %}
-      {% if membership.role == 'senior' %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button class="button primary wide">✓ Dobro sam</button></form>{% else %}<p class="helper">Potvrdu šalje {{ care_person.first_name|default:care_person.username }} sa svog naloga.</p>{% endif %}
+      {% if membership.role == 'senior' %}<form method="post" class="checkin-form">{% csrf_token %}<input type="hidden" name="action" value="checkin"><label class="sr-only" for="checkin-note">Kratka poruka porodici</label><input id="checkin-note" name="note" maxlength="240" placeholder="Kratka poruka porodici (opciono)"><button class="button primary wide">✓ Dobro sam</button></form>{% else %}<p class="helper">Potvrdu šalje {{ care_person.first_name|default:care_person.username }} sa svog naloga.</p>{% endif %}
     </article>
     <article class="panel quick-sos">
       <div class="panel-head"><div><span class="icon">!</span><h2>Brza pomoć</h2></div><span class="badge red">SOS</span></div>
       <p>Jednim dodirom porodica dobija obaveštenje i dostupnu lokaciju.</p>
-      <form id="sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><button class="button danger wide">SOS — treba mi pomoć</button></form>
+      <form id="sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><label class="sr-only" for="sos-note">Poruka uz SOS</label><input id="sos-note" name="note" maxlength="280" placeholder="Šta se dogodilo? (opciono)"><button class="button danger wide">SOS — treba mi pomoć</button></form>
     </article>
   </section>
 
@@ -51,13 +51,13 @@
   <div class="modal-head"><div><span class="icon">◷</span><h2>Podsetnici</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
   <p class="muted">Terapija, pregledi i važne dnevne obaveze za {{ care_person.first_name|default:care_person.username }}.</p>
   <div class="item-list">{% for r in reminders %}<article><div class="time">{{ r.scheduled_for|date:"H:i" }}</div><div><b>{{ r.title }}</b><p>{{ r.get_kind_display }} · {{ r.scheduled_for|date:"d.m." }}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ r.id }}"><button class="round" aria-label="Označi kao urađeno">✓</button></form></article>{% empty %}<p class="empty">Nema aktivnih podsetnika.</p>{% endfor %}</div>
-  {% if membership.role != 'senior' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="reminder"><label>Novi podsetnik<input name="title" required placeholder="Na primer: jutarnja terapija"></label><label>Vreme<input type="datetime-local" name="scheduled_for" required></label><button class="button primary">Sačuvaj podsetnik</button></form>{% endif %}
+  {% if membership.role != 'senior' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="reminder"><label>Novi podsetnik<input name="title" required placeholder="Na primer: jutarnja terapija"></label><label>Vrsta<select name="kind"><option value="medicine">Lek / terapija</option><option value="appointment">Pregled</option><option value="other">Drugo</option></select></label><label>Vreme<input type="datetime-local" name="scheduled_for" required></label><label class="checkbox"><input type="checkbox" name="repeat_daily"> Ponavlja se svakog dana</label><button class="button primary">Sačuvaj podsetnik</button></form>{% endif %}
 </dialog>
 
 <dialog class="modal" id="tasks">
   <div class="modal-head"><div><span class="icon">✓</span><h2>Porodični zadaci</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
-  <div class="item-list">{% for t in tasks %}<article class="task {% if t.done %}done{% endif %}"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="task_done"><input type="hidden" name="task_id" value="{{ t.id }}"><button class="round" {% if t.done %}disabled{% endif %}>✓</button></form><div><b>{{ t.title }}</b><p>{% if t.assignee %}Zadužen/a: {{ t.assignee.username }}{% else %}Nije dodeljeno{% endif %}</p></div></article>{% empty %}<p class="empty">Nema otvorenih zadataka.</p>{% endfor %}</div>
-  {% if membership.role != 'senior' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="task"><label>Novi zadatak<input name="title" required placeholder="Na primer: preuzeti lekove"></label><button class="button primary">Dodaj zadatak</button></form>{% endif %}
+  <div class="item-list">{% for t in tasks %}<article class="task {% if t.done %}done{% endif %}"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="task_done"><input type="hidden" name="task_id" value="{{ t.id }}"><button class="round" {% if t.done %}disabled{% endif %}>✓</button></form><div><b>{{ t.title }}</b><p>{% if t.assignee %}Zadužen/a: {{ t.assignee.username }}{% else %}Nije dodeljeno{% endif %}{% if t.due_at %} · Rok: {{ t.due_at|date:"d.m. H:i" }}{% endif %}</p></div></article>{% empty %}<p class="empty">Nema otvorenih zadataka.</p>{% endfor %}</div>
+  {% if membership.role != 'senior' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="task"><label>Novi zadatak<input name="title" required placeholder="Na primer: preuzeti lekove"></label><label>Zadužen/a<select name="assignee_id">{% for m in members %}{% if m.role != 'senior' %}<option value="{{ m.user_id }}">{{ m.user.first_name|default:m.user.username }}</option>{% endif %}{% endfor %}</select></label><label>Rok (opciono)<input type="datetime-local" name="due_at"></label><button class="button primary">Dodaj zadatak</button></form>{% endif %}
 </dialog>
 
 <dialog class="modal modal-chat" id="chat">

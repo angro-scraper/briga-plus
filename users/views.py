@@ -45,7 +45,8 @@ def dashboard(request):
     care_user = senior_membership.user if senior_membership and can_coordinate(membership) else request.user
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'checkin': CheckIn.objects.create(user=request.user, note=request.POST.get('note',''))
+        if action == 'checkin' and (membership.role == Membership.Role.SENIOR or care_user == request.user):
+            CheckIn.objects.create(user=request.user, note=request.POST.get('note', '').strip()[:240])
         elif action == 'message' and family:
             body = request.POST.get('body','').strip()
             if body:
@@ -53,15 +54,25 @@ def dashboard(request):
                 notify_family(family, request.user, Alert.Kind.MESSAGE, f'Nova poruka od {request.user.username}', body[:180])
         elif action == 'task' and family and can_coordinate(membership):
             title = request.POST.get('title', '').strip()
-            if title: CareTask.objects.create(family=family, title=title, assignee=request.user)
+            try:
+                due_at = timezone.datetime.fromisoformat(request.POST['due_at']) if request.POST.get('due_at') else None
+                if due_at and timezone.is_naive(due_at): due_at = timezone.make_aware(due_at)
+            except ValueError:
+                due_at = None
+                messages.error(request, 'Rok zadatka nije ispravan.')
+            assigned_membership = family.memberships.filter(user_id=request.POST.get('assignee_id')).select_related('user').first()
+            if title:
+                CareTask.objects.create(family=family, title=title, assignee=assigned_membership.user if assigned_membership else request.user, due_at=due_at)
         elif action == 'task_done' and family and can_coordinate(membership): family.tasks.filter(pk=request.POST.get('task_id')).update(done=True)
-        elif action == 'reminder':
+        elif action == 'reminder' and family and can_coordinate(membership):
             try:
                 scheduled = timezone.datetime.fromisoformat(request.POST['scheduled_for'])
                 if timezone.is_naive(scheduled): scheduled = timezone.make_aware(scheduled)
                 title = request.POST['title'].strip()
                 if not title: raise ValueError
-                Reminder.objects.create(user=care_user, title=title, kind=request.POST.get('kind', 'medicine'), scheduled_for=scheduled, repeat_daily=bool(request.POST.get('repeat_daily')))
+                kind = request.POST.get('kind', Reminder.Kind.MEDICINE)
+                if kind not in Reminder.Kind.values: raise ValueError
+                Reminder.objects.create(user=care_user, title=title, kind=kind, scheduled_for=scheduled, repeat_daily=bool(request.POST.get('repeat_daily')))
             except (KeyError, ValueError): messages.error(request, 'Proverite datum podsetnika.')
         elif action == 'reminder_done':
             Reminder.objects.filter(user=care_user, pk=request.POST.get('reminder_id')).update(completed_at=timezone.now())
@@ -72,7 +83,7 @@ def dashboard(request):
                 messages.success(request, 'Član porodice je dodat.')
             else: messages.error(request, 'Korisnik nije pronađen. Neka najpre napravi nalog.')
         elif action == 'sos' and family:
-            EmergencyAlert.objects.create(family=family, raised_by=request.user, latitude=request.POST.get('latitude') or None, longitude=request.POST.get('longitude') or None)
+            EmergencyAlert.objects.create(family=family, raised_by=request.user, latitude=request.POST.get('latitude') or None, longitude=request.POST.get('longitude') or None, note=request.POST.get('note', '').strip()[:280])
             notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za lokaciju i rutu.')
             messages.error(request, 'SOS je poslat članovima porodice.')
         elif action == 'sos_resolve' and family and can_coordinate(membership): family.emergencies.filter(pk=request.POST.get('sos_id')).update(resolved_at=timezone.now())

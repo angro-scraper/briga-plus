@@ -4,6 +4,7 @@ from families.models import Membership
 from checkins.models import CheckIn
 from reminders.models import Reminder
 from caretasks.models import CareTask
+from emergencies.models import EmergencyAlert
 
 class DashboardFlowTests(TestCase):
     def setUp(self):
@@ -48,5 +49,32 @@ class DashboardFlowTests(TestCase):
         response = self.client.post('/', {'action': 'reminder', 'title': 'Terapija', 'scheduled_for': '2026-08-01T09:00'})
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Reminder.objects.filter(user=senior, title='Terapija').exists())
+
+    def test_task_can_have_family_assignee_and_deadline(self):
+        caregiver = User.objects.create_user('ana', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+        self.client.post('/', {
+            'action': 'task', 'title': 'Preuzeti lekove', 'assignee_id': caregiver.id,
+            'due_at': '2026-08-01T17:30',
+        })
+        task = CareTask.objects.get(family=self.family, title='Preuzeti lekove')
+        self.assertEqual(task.assignee, caregiver)
+        self.assertIsNotNone(task.due_at)
+
+    def test_senior_cannot_create_reminder(self):
+        senior = User.objects.create_user('jelena2', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+        self.client.post('/', {'action': 'reminder', 'title': 'Neovlašćen', 'scheduled_for': '2026-08-01T09:00'})
+        self.assertFalse(Reminder.objects.filter(user=senior, title='Neovlašćen').exists())
+
+    def test_caregiver_can_resolve_active_sos(self):
+        caregiver = User.objects.create_user('marko', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+        sos = EmergencyAlert.objects.create(family=self.family, raised_by=self.user, note='Treba mi pomoć.')
+        self.client.force_login(caregiver)
+        self.client.post('/', {'action': 'sos_resolve', 'sos_id': sos.id})
+        sos.refresh_from_db()
+        self.assertIsNotNone(sos.resolved_at)
 
 # Create your tests here.
