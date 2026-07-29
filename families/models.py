@@ -1,3 +1,5 @@
+import datetime
+
 from django.conf import settings
 from django.db import models
 
@@ -15,6 +17,8 @@ class Membership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='family_memberships')
     role = models.CharField(max_length=16, choices=Role.choices)
     alert_after_minutes = models.PositiveIntegerField(default=120)
+    checkin_due_time = models.TimeField(default=datetime.time(10, 0))
+    gentle_reminder_minutes = models.PositiveIntegerField(default=30)
     class Meta: unique_together = ('family', 'user')
     def __str__(self): return f'{self.user} — {self.family}'
 

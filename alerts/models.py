@@ -7,6 +7,7 @@ class Alert(models.Model):
         CHECKIN = 'checkin', 'Propuštena potvrda'
         REMINDER = 'reminder', 'Podsetnik'
         MESSAGE = 'message', 'Poruka'
+        NEED_HELP = 'need_help', 'Potreban je poziv / pomoć'
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='alerts')
     kind = models.CharField(max_length=16, choices=Kind.choices)
     title = models.CharField(max_length=160)

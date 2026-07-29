@@ -8,5 +8,7 @@ class CareTask(models.Model):
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='assigned_tasks')
     due_at = models.DateTimeField(null=True, blank=True)
     done = models.BooleanField(default=False)
+    category = models.CharField(max_length=16, default='other')
+    notes = models.CharField(max_length=300, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta: ordering = ['done', 'due_at']

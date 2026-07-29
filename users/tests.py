@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from families.models import Membership
 from checkins.models import CheckIn
+from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
 from caretasks.models import CareTask
 from emergencies.models import EmergencyAlert
@@ -113,5 +114,41 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertEqual(response.context['family'], self.family)
         self.assertEqual(response.context['care_person'], senior)
+
+    def test_daily_routine_can_be_added_and_completed(self):
+        senior = User.objects.create_user('rados', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.post('/', {'action': 'routine', 'title': 'Popiti čašu vode', 'category': 'wellbeing', 'part_of_day': 'morning'})
+        routine = DailyRoutine.objects.get(user=senior, title='Popiti čašu vode')
+        self.client.force_login(senior)
+        self.client.post('/', {'action': 'routine_done', 'routine_id': routine.id})
+        self.assertTrue(RoutineCompletion.objects.filter(routine=routine, completed_on=timezone.localdate()).exists())
+
+    def test_health_log_and_non_urgent_help_request(self):
+        senior = User.objects.create_user('zora', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.post('/', {'action': 'health_log', 'kind': 'pressure', 'value': '125/80', 'note': 'Dobro se osećam'})
+        self.assertTrue(HealthLog.objects.filter(user=senior, kind='pressure', value='125/80').exists())
+        self.client.force_login(senior)
+        self.client.post('/', {'action': 'help_request', 'kind': 'call', 'note': 'Pozovite me kada možete.'})
+        request = EmergencyAlert.objects.get(family=self.family, kind='call')
+        self.assertEqual(request.note, 'Pozovite me kada možete.')
+
+    def test_sos_response_can_be_acknowledged_and_marked_en_route(self):
+        senior = User.objects.create_user('milena', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        sos = EmergencyAlert.objects.create(family=self.family, raised_by=senior)
+        self.client.post('/', {'action': 'sos_acknowledge', 'sos_id': sos.id})
+        self.client.post('/', {'action': 'sos_en_route', 'sos_id': sos.id})
+        sos.refresh_from_db()
+        self.assertEqual(sos.acknowledged_by, self.user)
+        self.assertEqual(sos.responder, self.user)
+        self.assertIsNotNone(sos.responder_en_route_at)
+
+    def test_support_circle_can_claim_unassigned_task(self):
+        task = CareTask.objects.create(family=self.family, title='Preuzeti terapiju')
+        self.client.post('/', {'action': 'task_claim', 'task_id': task.id})
+        task.refresh_from_db()
+        self.assertEqual(task.assignee, self.user)
 
 # Create your tests here.

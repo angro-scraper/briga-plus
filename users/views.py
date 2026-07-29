@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 from alerts.models import Alert, PushSubscription
 from alerts.push import send_push_alert
 from caretasks.models import CareTask
-from checkins.models import CheckIn
+from checkins.models import CheckIn, DailyRoutine, HealthLog, RoutineCompletion
 from emergencies.models import EmergencyAlert
 from families.models import EmergencyContact, Family, Membership
 from messaging.models import Message, VoiceMessage
@@ -107,9 +107,36 @@ def dashboard(request):
         action = request.POST.get('action')
         if action == 'checkin' and (membership.role == Membership.Role.SENIOR or care_user == request.user):
             note = request.POST.get('note', '').strip()[:240]
-            CheckIn.objects.create(user=request.user, note=note)
+            period = request.POST.get('period', CheckIn.Period.ANY)
+            if period not in CheckIn.Period.values:
+                period = CheckIn.Period.ANY
+            CheckIn.objects.create(user=request.user, note=note, period=period)
             if family:
                 notify_family(family, request.user, Alert.Kind.CHECKIN, f'Potvrda: {request.user.username} je dobro', note)
+        elif action == 'routine_done' and family:
+            routine = DailyRoutine.objects.filter(pk=request.POST.get('routine_id'), user=care_user, active=True).first()
+            if routine:
+                RoutineCompletion.objects.get_or_create(routine=routine, completed_on=timezone.localdate(), defaults={'user': request.user})
+        elif action == 'routine' and family and can_coordinate(membership):
+            title = request.POST.get('title', '').strip()[:140]
+            category = request.POST.get('category', DailyRoutine.Category.WELLBEING)
+            part_of_day = request.POST.get('part_of_day', DailyRoutine.PartOfDay.DAY)
+            if title and category in DailyRoutine.Category.values and part_of_day in DailyRoutine.PartOfDay.values:
+                DailyRoutine.objects.create(user=care_user, title=title, category=category, part_of_day=part_of_day)
+        elif action == 'routine_delete' and family and can_coordinate(membership):
+            DailyRoutine.objects.filter(pk=request.POST.get('routine_id'), user=care_user).update(active=False)
+        elif action == 'health_log' and family and (membership.role == Membership.Role.SENIOR or can_coordinate(membership)):
+            kind = request.POST.get('kind')
+            value = request.POST.get('value', '').strip()[:80]
+            note = request.POST.get('note', '').strip()[:300]
+            try:
+                recorded_at = timezone.datetime.fromisoformat(request.POST.get('recorded_at', ''))
+                if timezone.is_naive(recorded_at):
+                    recorded_at = timezone.make_aware(recorded_at)
+            except ValueError:
+                recorded_at = timezone.now()
+            if kind in HealthLog.Kind.values and (value or note):
+                HealthLog.objects.create(user=care_user, kind=kind, value=value, note=note, recorded_at=recorded_at)
         elif action == 'message' and family:
             body = request.POST.get('body', '').strip()
             if body:
@@ -131,11 +158,17 @@ def dashboard(request):
             except ValueError:
                 due_at = None
                 messages.error(request, 'Rok zadatka nije ispravan.')
-            assigned = family.memberships.filter(user_id=request.POST.get('assignee_id')).select_related('user').first()
+            assignee_id = request.POST.get('assignee_id')
+            assigned = family.memberships.filter(user_id=assignee_id).select_related('user').first() if assignee_id else None
             if title:
-                CareTask.objects.create(family=family, title=title, assignee=assigned.user if assigned else request.user, due_at=due_at)
+                CareTask.objects.create(
+                    family=family, title=title, assignee=assigned.user if assigned else None, due_at=due_at,
+                    category=request.POST.get('category', 'other')[:16], notes=request.POST.get('notes', '').strip()[:300],
+                )
         elif action == 'task_done' and family and can_coordinate(membership):
             family.tasks.filter(pk=request.POST.get('task_id')).update(done=True)
+        elif action == 'task_claim' and family and can_coordinate(membership):
+            family.tasks.filter(pk=request.POST.get('task_id'), assignee__isnull=True, done=False).update(assignee=request.user)
         elif action == 'reminder' and family and can_coordinate(membership):
             try:
                 scheduled = timezone.datetime.fromisoformat(request.POST['scheduled_for'])
@@ -190,10 +223,30 @@ def dashboard(request):
         elif action == 'sos' and family:
             EmergencyAlert.objects.create(
                 family=family, raised_by=request.user, latitude=request.POST.get('latitude') or None,
-                longitude=request.POST.get('longitude') or None, note=request.POST.get('note', '').strip()[:280],
+                longitude=request.POST.get('longitude') or None, note=request.POST.get('note', '').strip()[:280], kind=EmergencyAlert.Kind.SOS,
             )
             notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
             messages.error(request, 'SOS je poslat članovima porodice.')
+        elif action == 'help_request' and family:
+            kind = request.POST.get('kind', EmergencyAlert.Kind.CALL)
+            if kind in {EmergencyAlert.Kind.CALL, EmergencyAlert.Kind.UNWELL, EmergencyAlert.Kind.HELP}:
+                EmergencyAlert.objects.create(
+                    family=family, raised_by=request.user, kind=kind, note=request.POST.get('note', '').strip()[:280],
+                )
+                labels = {
+                    EmergencyAlert.Kind.CALL: 'traži poziv', EmergencyAlert.Kind.UNWELL: 'ne oseća se dobro',
+                    EmergencyAlert.Kind.HELP: 'traži pomoć',
+                }
+                notify_family(family, request.user, Alert.Kind.NEED_HELP, f'{request.user.username} {labels[kind]}', 'Otvorite Briga+ i javite se osobi.')
+                messages.success(request, 'Porodica je obaveštena. Ovo nije aktiviralo SOS.')
+        elif action == 'sos_acknowledge' and family and can_coordinate(membership):
+            family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, acknowledged_at__isnull=True).update(
+                acknowledged_at=timezone.now(), acknowledged_by=request.user,
+            )
+        elif action == 'sos_en_route' and family and can_coordinate(membership):
+            family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, responder_en_route_at__isnull=True).update(
+                responder_en_route_at=timezone.now(), responder=request.user,
+            )
         elif action == 'sos_resolve' and family and can_coordinate(membership):
             family.emergencies.filter(pk=request.POST.get('sos_id')).update(resolved_at=timezone.now())
         elif action == 'invite' and family and membership.role == Membership.Role.ADMIN:
@@ -205,6 +258,19 @@ def dashboard(request):
                 messages.error(request, 'Korisnik nije pronađen. Neka najpre napravi nalog.')
         elif action == 'alert_read':
             request.user.alerts.filter(pk=request.POST.get('alert_id')).update(read_at=timezone.now())
+        elif action == 'safety_settings' and family and membership.role == Membership.Role.ADMIN:
+            senior = family.memberships.filter(role=Membership.Role.SENIOR).first()
+            if senior:
+                try:
+                    due_time = timezone.datetime.strptime(request.POST.get('checkin_due_time', ''), '%H:%M').time()
+                    gentle_minutes = min(max(int(request.POST.get('gentle_reminder_minutes', 30)), 5), 180)
+                    alert_minutes = min(max(int(request.POST.get('alert_after_minutes', 120)), gentle_minutes + 5), 720)
+                    senior.checkin_due_time = due_time
+                    senior.gentle_reminder_minutes = gentle_minutes
+                    senior.alert_after_minutes = alert_minutes
+                    senior.save(update_fields=['checkin_due_time', 'gentle_reminder_minutes', 'alert_after_minutes'])
+                except ValueError:
+                    messages.error(request, 'Vreme i minuti za podsetnik nisu ispravni.')
         return redirect('pocetna')
 
     now = timezone.now()
@@ -213,6 +279,11 @@ def dashboard(request):
     next_reminder = active_reminders.filter(scheduled_for__gte=now).first()
     overdue_reminders = active_reminders.filter(scheduled_for__lt=now)
     tasks = family.tasks.all()[:8] if family else []
+    routines = list(care_user.daily_routines.filter(active=True))
+    completed_routine_ids = set(RoutineCompletion.objects.filter(routine__user=care_user, completed_on=timezone.localdate()).values_list('routine_id', flat=True))
+    for routine in routines:
+        routine.completed_today = routine.id in completed_routine_ids
+    safety_membership = family.memberships.filter(role=Membership.Role.SENIOR).first() if family else None
     care_week = {
         'checkins': care_user.checkins.filter(created_at__gte=week_start).count(),
         'taken': care_user.reminders.filter(completed_at__gte=week_start).count(),
@@ -235,9 +306,11 @@ def dashboard(request):
         'overdue_reminders': overdue_reminders[:4], 'tasks': tasks,
         'chat_messages': family.messages.select_related('sender').all()[:8] if family else [],
         'voice_messages': family.voice_messages.select_related('sender').all()[:8] if family else [],
-        'sos_active': family.emergencies.filter(resolved_at__isnull=True).first() if family else None,
+        'sos_active': family.emergencies.filter(resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS).first() if family else None,
+        'help_requests': family.emergencies.filter(resolved_at__isnull=True).exclude(kind=EmergencyAlert.Kind.SOS)[:4] if family else [],
         'members': family.memberships.select_related('user').all() if family else [],
         'contacts': family.emergency_contacts.all() if family else [],
         'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'unread_alert_count': request.user.alerts.filter(read_at__isnull=True).count(), 'care_week': care_week, 'week_details': week_details,
+        'routines': routines, 'routine_done_count': len(completed_routine_ids), 'health_logs': care_user.health_logs.all()[:8], 'safety_membership': safety_membership,
         'push_public_key': settings.VAPID_PUBLIC_KEY,
     })
