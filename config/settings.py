@@ -125,6 +125,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'}}
 LOGIN_REDIRECT_URL = 'pocetna'
+LOGIN_URL = 'prijava'
 LOGOUT_REDIRECT_URL = 'prijava'
 CSRF_TRUSTED_ORIGINS = [host for host in os.environ.get('BRIGA_CSRF_TRUSTED_ORIGINS', '').split(',') if host]
 SESSION_COOKIE_SECURE = not DEBUG

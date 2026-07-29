@@ -27,6 +27,11 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
 
+    def test_dashboard_redirects_to_briga_login(self):
+        self.client.logout()
+        response = self.client.get('/')
+        self.assertRedirects(response, '/prijava/?next=/')
+
     def test_senior_cannot_create_or_complete_family_task(self):
         senior = User.objects.create_user('jelena', password='bezbedna-lozinka-123')
         Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
