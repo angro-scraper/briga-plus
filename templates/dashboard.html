@@ -7,11 +7,12 @@
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="stylesheet" href="/static/app.css">
   <link rel="stylesheet" href="/static/week-details.css">
+  <link rel="stylesheet" href="/static/brand-refresh.css">
   <title>Briga+ | Porodični panel</title>
 </head>
 <body class="{% if membership.role == 'senior' %}senior-account{% endif %}">
 <header class="topbar">
-  <a class="brand" href="/" aria-label="Briga+ početna"><span class="brand-mark">+</span>Briga<span class="brand-plus">+</span></a>
+  <a class="brand" href="/" aria-label="Briga+ početna"><span class="brand-mark"><img src="/static/briga-mark.svg" alt=""></span><span class="brand-word">Briga<span class="brand-plus">+</span></span></a>
   <nav aria-label="Glavna navigacija"><a href="#danas">Danas</a><a href="#alati">Alati</a></nav>
   <div class="profile"><button id="senior-mode-toggle" class="text-control" type="button">Veći prikaz</button><span class="user-name">{{ user.first_name|default:user.username }}</span><a class="logout" href="/odjava/">Odjava</a></div>
 </header>
@@ -67,12 +68,12 @@
 
   <section class="tools-head" id="alati"><div><p class="eyebrow">SVE NA JEDNOM MESTU</p><h2>Porodični alati</h2></div><p>Otvorite samo ono što vam sada treba.</p></section>
   <section class="tool-grid" aria-label="Porodični alati">
-    <button class="tool-card reminder-tool" type="button" data-modal="reminders"><span class="tool-icon">◷</span><span><b>Podsetnici</b><small>{{ reminders|length }} aktivno · terapija i pregledi</small></span><i>›</i></button>
-    {% if membership.role != 'senior' %}<button class="tool-card task-tool" type="button" data-modal="tasks"><span class="tool-icon">✓</span><span><b>Porodični zadaci</b><small>{{ care_week.open_tasks }} otvoreno · podelite obaveze</small></span><i>›</i></button>{% endif %}
-    <button class="tool-card chat-tool" type="button" data-modal="chat"><span class="tool-icon">◉</span><span><b>Porodični chat</b><small>Poruke i glasovne poruke</small></span><i>›</i></button>
-    <button class="tool-card contacts-tool" type="button" data-modal="contacts"><span class="tool-icon">☎</span><span><b>Hitni kontakti</b><small>{{ contacts|length }} brojeva za brzi poziv</small></span><i>›</i></button>
-    <button class="tool-card alert-tool" type="button" data-modal="alerts"><span class="tool-icon">◌</span><span><b>Obaveštenja</b><small>{% if unread_alert_count %}{{ unread_alert_count }} nepročitanih{% else %}Sve je pregledano{% endif %}</small></span><i>›</i></button>
-    {% if membership.role != 'senior' %}<button class="tool-card week-tool" type="button" data-modal="week"><span class="tool-icon">▣</span><span><b>Nedeljni pregled</b><small>{{ care_week.taken }} potvrđenih · {{ care_week.upcoming }} dolazi</small></span><i>›</i></button><button class="tool-card family-tool" type="button" data-modal="family"><span class="tool-icon">♧</span><span><b>Porodica</b><small>{{ members|length }} člana u krugu brige</small></span><i>›</i></button>{% endif %}
+    <button class="tool-card reminder-tool" type="button" data-modal="reminders"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.4l3.5 2"/></svg></span><span><b>Podsetnici</b><small>{{ reminders|length }} aktivno · terapija i pregledi</small></span><i>›</i></button>
+    {% if membership.role != 'senior' %}<button class="tool-card task-tool" type="button" data-modal="tasks"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8"/></svg></span><span><b>Porodični zadaci</b><small>{{ care_week.open_tasks }} otvoreno · podelite obaveze</small></span><i>›</i></button>{% endif %}
+    <button class="tool-card chat-tool" type="button" data-modal="chat"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 11a7 7 0 0 1-7 7H8l-4 3v-5.5A7 7 0 1 1 20 11Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg></span><span><b>Porodični chat</b><small>Poruke i glasovne poruke</small></span><i>›</i></button>
+    <button class="tool-card contacts-tool" type="button" data-modal="contacts"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6.6 3.8 9.4 7 7.8 9.2a14.2 14.2 0 0 0 7 7l2.2-1.6 3.2 2.8-1.4 3.1c-.4.9-1.4 1.3-2.3 1A18.3 18.3 0 0 1 2.5 7.5c-.3-.9.1-1.9 1-2.3l3.1-1.4Z"/></svg></span><span><b>Hitni kontakti</b><small>{{ contacts|length }} brojeva za brzi poziv</small></span><i>›</i></button>
+    <button class="tool-card alert-tool" type="button" data-modal="alerts"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 10a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 22h4"/></svg></span><span><b>Obaveštenja</b><small>{% if unread_alert_count %}{{ unread_alert_count }} nepročitanih{% else %}Sve je pregledano{% endif %}</small></span><i>›</i></button>
+    {% if membership.role != 'senior' %}<button class="tool-card week-tool" type="button" data-modal="week"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6"/></svg></span><span><b>Nedeljni pregled</b><small>{{ care_week.taken }} potvrđenih · {{ care_week.upcoming }} dolazi</small></span><i>›</i></button><button class="tool-card family-tool" type="button" data-modal="family"><span class="tool-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 20v-1a6 6 0 0 1 12 0v1M5 10a2.5 2.5 0 0 0-2.5 2.5M19 10a2.5 2.5 0 0 1 2.5 2.5"/></svg></span><span><b>Porodica</b><small>{{ members|length }} člana u krugu brige</small></span><i>›</i></button>{% endif %}
   </section>
 </main>
 
