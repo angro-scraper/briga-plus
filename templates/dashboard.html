@@ -1,23 +1,93 @@
 <!doctype html>
-<html lang="sr"><head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#16624c"><link rel="manifest" href="/static/manifest.webmanifest"><link rel="stylesheet" href="/static/app.css">
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#16624c">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/app.css">
   <title>Briga+ | Porodični panel</title>
-</head><body>
-<header class="topbar"><a class="brand" href="/">Briga<span>+</span></a><nav><a href="#danas">Danas</a><a href="#podsetnici">Podsetnici</a><a href="#porodica">Porodica</a></nav><div class="profile"><span>{{ user.username }}</span><a class="outline" href="/odjava/">Odjava</a></div></header>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Briga<span>+</span></a>
+  <nav><a href="#danas">Danas</a><a href="#alati">Porodični alati</a></nav>
+  <div class="profile"><span>{{ user.username }}</span><a class="outline" href="/odjava/">Odjava</a></div>
+</header>
 <main class="page">
-  <section class="welcome" id="danas"><div><p class="eyebrow">PORODIČNI PANEL</p><h1>Brinemo zajedno o: <strong>{{ care_person.first_name|default:care_person.username }}</strong></h1><p class="muted">Sve važne stvari za danas, na jednom mirnom mestu.</p></div><div class="date-card"><span>DANAS</span><b>{% now "l, d. F" %}</b></div></section>
+  <section class="welcome" id="danas">
+    <div><p class="eyebrow">PORODIČNI PANEL</p><h1>Brinemo zajedno o: <strong>{{ care_person.first_name|default:care_person.username }}</strong></h1><p class="muted">Izaberite prozor da vidite detalje i uradite potrebnu akciju.</p></div>
+    <div class="date-card"><span>DANAS</span><b>{% now "l, d. F" %}</b></div>
+  </section>
+
   {% for message in messages %}<div class="toast {{ message.tags }}">{{ message }}</div>{% endfor %}
-  {% if sos_active %}<section class="sos-alert"><div><b>Aktivan SOS</b><p>{{ sos_active.raised_by.username }} je poslao/la zahtev za pomoć.</p></div>{% if sos_active.latitude %}<a class="button light" target="_blank" href="https://www.google.com/maps?q={{ sos_active.latitude }},{{ sos_active.longitude }}">Otvori lokaciju</a>{% endif %}</section>{% endif %}
+  {% if sos_active %}
+    <section class="sos-alert"><div><b>Aktivan SOS</b><p>{{ sos_active.raised_by.username }} je poslao/la zahtev za pomoć.</p></div>{% if sos_active.latitude %}<a class="button light" target="_blank" href="https://www.google.com/maps?q={{ sos_active.latitude }},{{ sos_active.longitude }}">Otvori lokaciju</a>{% endif %}</section>
+  {% endif %}
+
   <section class="status-grid">
-    <article class="panel checkin"><div class="panel-head"><div><span class="icon">♡</span><h2>Dnevna potvrda</h2></div><span class="badge">{{ care_person.first_name|default:care_person.username }}</span></div>{% if last_checkin %}<p class="status-good">✓ Potvrđeno</p><p class="muted">{{ last_checkin.created_at|date:"d.m. Y. u H:i" }}{% if last_checkin.note %} · {{ last_checkin.note }}{% endif %}</p>{% else %}<p class="status-warn">Čekamo potvrdu da je sve u redu.</p>{% endif %}{% if membership.role == 'senior' %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button class="button primary wide">✓ Dobro sam</button></form>{% else %}<p class="helper">Potvrdu šalje {{ care_person.first_name|default:care_person.username }} sa svog naloga.</p>{% endif %}</article>
-    <article class="panel quick-sos"><div class="panel-head"><div><span class="icon">!</span><h2>Brza pomoć</h2></div><span class="badge red">SOS</span></div><p>Jednim dodirom porodica dobija obaveštenje i dostupnu lokaciju.</p><form id="sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><button class="button danger wide">SOS — treba mi pomoć</button></form></article>
+    <article class="panel checkin">
+      <div class="panel-head"><div><span class="icon">♡</span><h2>Dnevna potvrda</h2></div><span class="badge">{{ care_person.first_name|default:care_person.username }}</span></div>
+      {% if last_checkin %}<p class="status-good">✓ Potvrđeno</p><p class="muted">{{ last_checkin.created_at|date:"d.m. Y. u H:i" }}{% if last_checkin.note %} · {{ last_checkin.note }}{% endif %}</p>{% else %}<p class="status-warn">Čekamo potvrdu da je sve u redu.</p>{% endif %}
+      {% if membership.role == 'senior' %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button class="button primary wide">✓ Dobro sam</button></form>{% else %}<p class="helper">Potvrdu šalje {{ care_person.first_name|default:care_person.username }} sa svog naloga.</p>{% endif %}
+    </article>
+    <article class="panel quick-sos">
+      <div class="panel-head"><div><span class="icon">!</span><h2>Brza pomoć</h2></div><span class="badge red">SOS</span></div>
+      <p>Jednim dodirom porodica dobija obaveštenje i dostupnu lokaciju.</p>
+      <form id="sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><button class="button danger wide">SOS — treba mi pomoć</button></form>
+    </article>
   </section>
-  {% if alerts %}<section class="panel notifications"><div class="panel-head"><div><span class="icon">◌</span><h2>Nova obaveštenja</h2></div><span class="badge">{{ alerts|length }}</span></div><div class="notification-list">{% for a in alerts %}<article><div><b>{{ a.title }}</b><p>{{ a.body }}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="alert_read"><input type="hidden" name="alert_id" value="{{ a.id }}"><button class="text-button">Pročitano</button></form></article>{% endfor %}</div></section>{% endif %}
-  <section class="workspace-grid">
-    <article class="panel" id="podsetnici"><div class="panel-head"><div><span class="icon">◷</span><h2>Podsetnici</h2></div><span class="badge green">{{ reminders|length }} aktivno</span></div><div class="item-list">{% for r in reminders %}<article><div class="time">{{ r.scheduled_for|date:"H:i" }}</div><div><b>{{ r.title }}</b><p>{{ r.get_kind_display }} · {{ r.scheduled_for|date:"d.m." }}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ r.id }}"><button class="round" aria-label="Označi kao urađeno">✓</button></form></article>{% empty %}<p class="empty">Nema aktivnih podsetnika.</p>{% endfor %}</div><details class="composer"><summary>+ Dodaj podsetnik</summary><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reminder"><label>Naziv<input name="title" required placeholder="Na primer: jutarnja terapija"></label><label>Vreme<input type="datetime-local" name="scheduled_for" required></label><button class="button primary">Sačuvaj podsetnik</button></form></details></article>
-    <article class="panel" id="zadaci"><div class="panel-head"><div><span class="icon">✓</span><h2>Porodični zadaci</h2></div><span class="badge">{{ tasks|length }}</span></div><div class="item-list">{% for t in tasks %}<article class="task {% if t.done %}done{% endif %}"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="task_done"><input type="hidden" name="task_id" value="{{ t.id }}"><button class="round" {% if t.done %}disabled{% endif %}>✓</button></form><div><b>{{ t.title }}</b><p>{% if t.assignee %}Zadužen/a: {{ t.assignee.username }}{% else %}Nije dodeljeno{% endif %}</p></div></article>{% empty %}<p class="empty">Nema otvorenih zadataka.</p>{% endfor %}</div>{% if membership.role != 'senior' %}<details class="composer"><summary>+ Novi porodični zadatak</summary><form method="post">{% csrf_token %}<input type="hidden" name="action" value="task"><label>Zadatak<input name="title" required placeholder="Na primer: preuzeti lekove"></label><button class="button primary">Dodaj zadatak</button></form></details>{% endif %}</article>
+
+  <section class="window-grid" id="alati" aria-label="Porodični alati">
+    <button class="app-window reminders-window" type="button" data-modal="reminders"><span class="window-icon">◷</span><span><b>Podsetnici</b><small>{{ reminders|length }} aktivno · terapija, pregledi i ostalo</small></span><span class="window-arrow">›</span></button>
+    <button class="app-window tasks-window" type="button" data-modal="tasks"><span class="window-icon">✓</span><span><b>Porodični zadaci</b><small>{{ tasks|length }} stavki · podelite obaveze</small></span><span class="window-arrow">›</span></button>
+    <button class="app-window chat-window" type="button" data-modal="chat"><span class="window-icon">◉</span><span><b>Porodični chat</b><small>Poruke i dogovor na jednom mestu</small></span><span class="window-arrow">›</span></button>
+    <button class="app-window family-window" type="button" data-modal="family"><span class="window-icon">♧</span><span><b>Porodica</b><small>{{ members|length }} člana u krugu brige</small></span><span class="window-arrow">›</span></button>
+    <button class="app-window alerts-window" type="button" data-modal="alerts"><span class="window-icon">◌</span><span><b>Obaveštenja</b><small>{% if alerts %}{{ alerts|length }} novih poruka i promena{% else %}Sve ste pregledali{% endif %}</small></span><span class="window-arrow">›</span></button>
   </section>
-  <section class="workspace-grid lower"><article class="panel chat"><div class="panel-head"><div><span class="icon">◉</span><h2>Porodični chat</h2></div></div><div class="messages">{% for m in messages %}<article class="message {% if m.sender_id == user.id %}mine{% endif %}"><b>{{ m.sender.first_name|default:m.sender.username }}</b><p>{{ m.body }}</p><time>{{ m.created_at|date:"H:i" }}</time></article>{% empty %}<p class="empty">Pošaljite prvu poruku porodici.</p>{% endfor %}</div><form method="post" class="chat-form">{% csrf_token %}<input type="hidden" name="action" value="message"><input name="body" required maxlength="2000" placeholder="Napišite poruku..."><button class="button primary">Pošalji</button></form></article>
-  <article class="panel" id="porodica"><div class="panel-head"><div><span class="icon">♧</span><h2>Porodica</h2></div><span class="badge">{{ members|length }} člana</span></div><div class="people">{% for m in members %}<div><span class="avatar">{{ m.user.username|first|upper }}</span><p><b>{{ m.user.first_name|default:m.user.username }}</b><small>{{ m.get_role_display }}</small></p></div>{% endfor %}</div>{% if membership.role == 'admin' %}<details class="composer"><summary>+ Dodaj postojećeg člana</summary><form method="post">{% csrf_token %}<input type="hidden" name="action" value="invite"><label>Korisničko ime<input name="username" required placeholder="Korisnik već mora imati nalog"></label><label>Uloga<select name="role"><option value="caregiver">Član porodice</option><option value="senior">Osoba o kojoj se brine</option></select></label><button class="button primary">Dodaj člana</button></form></details>{% endif %}</article></section>
-</main><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/service-worker.js');document.querySelector('#sos').addEventListener('submit',e=>{if(!confirm('Da li želite da pošaljete SOS porodici?')){e.preventDefault();return}navigator.geolocation?.getCurrentPosition(p=>{e.target.latitude.value=p.coords.latitude;e.target.longitude.value=p.coords.longitude})})</script></body></html>
+</main>
+
+<dialog class="modal" id="reminders">
+  <div class="modal-head"><div><span class="icon">◷</span><h2>Podsetnici</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
+  <p class="muted">Terapija, pregledi i važne dnevne obaveze za {{ care_person.first_name|default:care_person.username }}.</p>
+  <div class="item-list">{% for r in reminders %}<article><div class="time">{{ r.scheduled_for|date:"H:i" }}</div><div><b>{{ r.title }}</b><p>{{ r.get_kind_display }} · {{ r.scheduled_for|date:"d.m." }}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ r.id }}"><button class="round" aria-label="Označi kao urađeno">✓</button></form></article>{% empty %}<p class="empty">Nema aktivnih podsetnika.</p>{% endfor %}</div>
+  {% if membership.role != 'senior' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="reminder"><label>Novi podsetnik<input name="title" required placeholder="Na primer: jutarnja terapija"></label><label>Vreme<input type="datetime-local" name="scheduled_for" required></label><button class="button primary">Sačuvaj podsetnik</button></form>{% endif %}
+</dialog>
+
+<dialog class="modal" id="tasks">
+  <div class="modal-head"><div><span class="icon">✓</span><h2>Porodični zadaci</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
+  <div class="item-list">{% for t in tasks %}<article class="task {% if t.done %}done{% endif %}"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="task_done"><input type="hidden" name="task_id" value="{{ t.id }}"><button class="round" {% if t.done %}disabled{% endif %}>✓</button></form><div><b>{{ t.title }}</b><p>{% if t.assignee %}Zadužen/a: {{ t.assignee.username }}{% else %}Nije dodeljeno{% endif %}</p></div></article>{% empty %}<p class="empty">Nema otvorenih zadataka.</p>{% endfor %}</div>
+  {% if membership.role != 'senior' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="task"><label>Novi zadatak<input name="title" required placeholder="Na primer: preuzeti lekove"></label><button class="button primary">Dodaj zadatak</button></form>{% endif %}
+</dialog>
+
+<dialog class="modal modal-chat" id="chat">
+  <div class="modal-head"><div><span class="icon">◉</span><h2>Porodični chat</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
+  <div class="messages">{% for m in messages %}<article class="message {% if m.sender_id == user.id %}mine{% endif %}"><b>{{ m.sender.first_name|default:m.sender.username }}</b><p>{{ m.body }}</p><time>{{ m.created_at|date:"H:i" }}</time></article>{% empty %}<p class="empty">Pošaljite prvu poruku porodici.</p>{% endfor %}</div>
+  <form method="post" class="chat-form">{% csrf_token %}<input type="hidden" name="action" value="message"><input name="body" required maxlength="2000" placeholder="Napišite poruku..."><button class="button primary">Pošalji</button></form>
+</dialog>
+
+<dialog class="modal" id="family">
+  <div class="modal-head"><div><span class="icon">♧</span><h2>Porodica</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
+  <div class="people">{% for m in members %}<div><span class="avatar">{{ m.user.username|first|upper }}</span><p><b>{{ m.user.first_name|default:m.user.username }}</b><small>{{ m.get_role_display }}</small></p></div>{% endfor %}</div>
+  {% if membership.role == 'admin' %}<form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="invite"><label>Dodaj postojećeg člana<input name="username" required placeholder="Korisnik već mora imati nalog"></label><label>Uloga<select name="role"><option value="caregiver">Član porodice</option><option value="senior">Osoba o kojoj se brine</option></select></label><button class="button primary">Dodaj člana</button></form>{% endif %}
+</dialog>
+
+<dialog class="modal" id="alerts">
+  <div class="modal-head"><div><span class="icon">◌</span><h2>Obaveštenja</h2></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
+  <div class="notification-list">{% for a in alerts %}<article><div><b>{{ a.title }}</b><p>{{ a.body }}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="alert_read"><input type="hidden" name="alert_id" value="{{ a.id }}"><button class="text-button">Pročitano</button></form></article>{% empty %}<p class="empty">Nema novih obaveštenja.</p>{% endfor %}</div>
+</dialog>
+
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js');
+document.querySelectorAll('[data-modal]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.modal).showModal()));
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.querySelector('.modal-close').addEventListener('click', () => modal.close());
+  modal.addEventListener('click', event => { if (event.target === modal) modal.close(); });
+});
+document.querySelector('#sos').addEventListener('submit', event => {
+  if (!confirm('Da li želite da pošaljete SOS porodici?')) { event.preventDefault(); return; }
+  navigator.geolocation?.getCurrentPosition(position => { event.target.latitude.value = position.coords.latitude; event.target.longitude.value = position.coords.longitude; });
+});
+</script>
+</body>
+</html>
