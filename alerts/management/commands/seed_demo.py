@@ -2,7 +2,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.utils import timezone
-from families.models import Family, Membership
+from families.models import EmergencyContact, Family, Membership
 from checkins.models import CheckIn
 from reminders.models import Reminder
 from caretasks.models import CareTask
@@ -24,9 +24,10 @@ class Command(BaseCommand):
         Membership.objects.update_or_create(user=users['ana'], family=family, defaults={'role': Membership.Role.CAREGIVER})
         now = timezone.now()
         CheckIn.objects.get_or_create(user=users['mama'], created_at__date=now.date(), defaults={'note': 'Dobro sam, hvala.'})
-        Reminder.objects.get_or_create(user=users['mama'], title='Jutarnja terapija', defaults={'kind': Reminder.Kind.MEDICINE, 'scheduled_for': now.replace(hour=9, minute=0, second=0, microsecond=0), 'repeat_daily': True})
+        Reminder.objects.get_or_create(user=users['mama'], title='Jutarnja terapija', defaults={'kind': Reminder.Kind.MEDICINE, 'scheduled_for': now.replace(hour=9, minute=0, second=0, microsecond=0), 'repeat_daily': True, 'dosage': '1 tableta od 5 mg', 'instructions': 'Posle doručka'})
         Reminder.objects.get_or_create(user=users['mama'], title='Kontrola kod kardiologa', defaults={'kind': Reminder.Kind.APPOINTMENT, 'scheduled_for': now + timedelta(days=4)})
         CareTask.objects.get_or_create(family=family, title='Pozvati mamu posle ručka', defaults={'assignee': users['ana'], 'due_at': now + timedelta(hours=3)})
         CareTask.objects.get_or_create(family=family, title='Preuzeti terapiju iz apoteke', defaults={'assignee': users['demo'], 'due_at': now + timedelta(days=1)})
+        EmergencyContact.objects.get_or_create(family=family, name='Ana Petrović', defaults={'relationship': 'Ćerka', 'phone': '+381641234567', 'priority': 1})
         Message.objects.get_or_create(family=family, sender=users['ana'], body='Dobro jutro, pozvaću mamu posle ručka.')
         self.stdout.write(self.style.SUCCESS('Demo porodica je spremna. Prijava: demo / BrigaPlus2026!'))

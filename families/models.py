@@ -17,3 +17,16 @@ class Membership(models.Model):
     alert_after_minutes = models.PositiveIntegerField(default=120)
     class Meta: unique_together = ('family', 'user')
     def __str__(self): return f'{self.user} — {self.family}'
+
+
+class EmergencyContact(models.Model):
+    family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='emergency_contacts')
+    name = models.CharField(max_length=120)
+    relationship = models.CharField(max_length=80, blank=True)
+    phone = models.CharField(max_length=32)
+    priority = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        ordering = ['priority', 'name']
+
+    def __str__(self): return f'{self.name} ({self.phone})'

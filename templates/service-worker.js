@@ -8,3 +8,16 @@ self.addEventListener('fetch', event => {
     const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); return response;
   }).catch(() => caches.match(event.request)));
 });
+self.addEventListener('push', event => {
+  const payload = event.data ? event.data.json() : {};
+  event.waitUntil(self.registration.showNotification(payload.title || 'Briga+', {
+    body: payload.body || 'Imate novo obaveštenje.',
+    icon: '/static/manifest.webmanifest',
+    badge: '/static/manifest.webmanifest',
+    data: { url: payload.url || '/' },
+  }));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url || '/'));
+});

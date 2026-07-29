@@ -1,10 +1,12 @@
 from django.test import TestCase
+from django.utils import timezone
 from django.contrib.auth.models import User
 from families.models import Membership
 from checkins.models import CheckIn
 from reminders.models import Reminder
 from caretasks.models import CareTask
 from emergencies.models import EmergencyAlert
+from families.models import EmergencyContact
 
 class DashboardFlowTests(TestCase):
     def setUp(self):
@@ -86,5 +88,20 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(str(sos.latitude), '44.786568')
         self.assertEqual(str(sos.longitude), '20.448922')
         self.assertEqual(sos.note, 'Potrebna mi je pomoć.')
+
+    def test_coordinator_can_create_emergency_contact(self):
+        self.client.post('/', {'action': 'contact', 'name': 'Ana Petrović', 'phone': '+381641234567', 'relationship': 'Ćerka', 'priority': '1'})
+        contact = EmergencyContact.objects.get(family=self.family)
+        self.assertEqual(contact.name, 'Ana Petrović')
+        self.assertEqual(contact.phone, '+381641234567')
+
+    def test_daily_reminder_creates_next_confirmation_slot(self):
+        reminder = Reminder.objects.create(user=self.user, title='Terapija', scheduled_for=timezone.now(), repeat_daily=True)
+        self.client.post('/', {'action': 'reminder_done', 'reminder_id': reminder.id})
+        reminder.refresh_from_db()
+        self.assertIsNotNone(reminder.completed_at)
+        next_reminder = Reminder.objects.exclude(pk=reminder.pk).get(user=self.user, title='Terapija')
+        self.assertTrue(next_reminder.repeat_daily)
+        self.assertGreater(next_reminder.scheduled_for, timezone.now())
 
 # Create your tests here.
