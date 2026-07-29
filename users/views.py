@@ -17,7 +17,7 @@ from alerts.push import send_push_alert
 from caretasks.models import CareTask
 from checkins.models import CheckIn, DailyRoutine, HealthLog, MoodEntry, RoutineCompletion
 from emergencies.models import EmergencyAlert
-from families.models import CareDocument, CareProfile, EmergencyContact, Family, FamilyVisit, Membership
+from families.models import CareDevice, CareDocument, CareProfile, EmergencyContact, Family, FamilyVisit, Membership
 from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
 
@@ -54,7 +54,7 @@ def service_worker(request):
 
 
 def health(request):
-    return JsonResponse({'status': 'ok', 'application': 'Briga+', 'version': '0.2.0'})
+    return JsonResponse({'status': 'ok', 'application': 'Briga+', 'version': '0.5.0'})
 
 
 @login_required
@@ -159,6 +159,13 @@ def dashboard(request):
                 CareDocument.objects.create(user=care_user, uploaded_by=request.user, title=request.POST.get('title', '').strip()[:160] or uploaded.name[:160], category=category, document=uploaded)
             else:
                 messages.error(request, 'Dokument mora biti PDF ili fotografija manja od 10 MB.')
+        elif action == 'device' and family and can_coordinate(membership):
+            kind = request.POST.get('device_type', CareDevice.DeviceType.BRACELET)
+            if kind in CareDevice.DeviceType.values:
+                CareDevice.objects.create(
+                    user=care_user, name=request.POST.get('name', '').strip()[:80] or 'Briga+ uređaj',
+                    serial_number=request.POST.get('serial_number', '').strip()[:80], device_type=kind,
+                )
         elif action == 'visit' and family and can_coordinate(membership):
             try:
                 scheduled_for = timezone.datetime.fromisoformat(request.POST.get('scheduled_for', ''))
@@ -364,7 +371,7 @@ def dashboard(request):
         'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'unread_alert_count': request.user.alerts.filter(read_at__isnull=True).count(), 'care_week': care_week, 'week_details': week_details,
         'routines': routines, 'routine_done_count': len(completed_routine_ids), 'health_logs': care_user.health_logs.all()[:8], 'safety_membership': safety_membership,
         'mood_today': MoodEntry.objects.filter(user=care_user, recorded_on=timezone.localdate()).first(), 'recent_moods': care_user.mood_entries.all()[:7],
-        'care_profile': care_profile, 'documents': care_user.care_documents.all()[:8], 'visits': family.visits.select_related('visitor').filter(scheduled_for__gte=now - timedelta(days=1))[:8] if family else [],
+        'care_profile': care_profile, 'documents': care_user.care_documents.all()[:8], 'devices': care_user.care_devices.all()[:5], 'visits': family.visits.select_related('visitor').filter(scheduled_for__gte=now - timedelta(days=1))[:8] if family else [],
         'push_public_key': settings.VAPID_PUBLIC_KEY,
     })
 

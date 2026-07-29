@@ -78,3 +78,25 @@ class CareDocument(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class CareDevice(models.Model):
+    class DeviceType(models.TextChoices):
+        BRACELET = 'bracelet', 'SOS narukvica'
+        WATCH = 'watch', 'Pametni sat'
+        OTHER = 'other', 'Drugi uređaj'
+    class Status(models.TextChoices):
+        READY = 'ready', 'Spreman za povezivanje'
+        CONNECTED = 'connected', 'Povezan'
+        OFFLINE = 'offline', 'Nije dostupan'
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='care_devices')
+    name = models.CharField(max_length=80, default='Briga+ uređaj')
+    serial_number = models.CharField(max_length=80, blank=True)
+    device_type = models.CharField(max_length=16, choices=DeviceType.choices, default=DeviceType.BRACELET)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.READY)
+    battery_percent = models.PositiveSmallIntegerField(null=True, blank=True)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
