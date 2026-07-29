@@ -7,7 +7,7 @@ from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
 from caretasks.models import CareTask
 from emergencies.models import EmergencyAlert
-from families.models import CareDocument, CareProfile, EmergencyContact, FamilyVisit
+from families.models import CareDocument, CareProfile, EmergencyContact, FamilyInvite, FamilyVisit
 from checkins.models import MoodEntry
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -190,5 +190,43 @@ class DashboardFlowTests(TestCase):
         self.client.force_login(senior)
         response = self.client.get('/jednostavno/')
         self.assertEqual(response.status_code, 200)
+
+    def test_admin_creates_single_use_invite_for_cared_person(self):
+        response = self.client.post('/', {
+            'action': 'invite_create', 'role': 'senior', 'access_level': 'basic',
+            'recipient_label': 'Jelena Petrović',
+        })
+        self.assertEqual(response.status_code, 302)
+        invite = FamilyInvite.objects.get(family=self.family)
+        self.assertEqual(invite.role, Membership.Role.SENIOR)
+        self.client.logout()
+        response = self.client.get(invite.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(invite.get_absolute_url(), {
+            'username': 'pozvana_jelena',
+            'password1': 'bezbedna-lozinka-123',
+            'password2': 'bezbedna-lozinka-123',
+        })
+        self.assertRedirects(response, '/')
+        joined = User.objects.get(username='pozvana_jelena')
+        self.assertTrue(Membership.objects.filter(family=self.family, user=joined, role=Membership.Role.SENIOR).exists())
+        invite.refresh_from_db()
+        self.assertEqual(invite.accepted_by, joined)
+        self.client.logout()
+        self.assertEqual(self.client.get(invite.get_absolute_url()).status_code, 404)
+
+    def test_admin_can_approve_full_access_for_family_member(self):
+        caregiver = User.objects.create_user('porodicni_clan', password='bezbedna-lozinka-123')
+        member = Membership.objects.create(
+            user=caregiver, family=self.family, role=Membership.Role.CAREGIVER,
+            access_level=Membership.AccessLevel.BASIC,
+        )
+        response = self.client.post('/', {
+            'action': 'member_access', 'membership_id': member.id,
+            'access_level': Membership.AccessLevel.FULL,
+        })
+        self.assertEqual(response.status_code, 302)
+        member.refresh_from_db()
+        self.assertEqual(member.access_level, Membership.AccessLevel.FULL)
 
 # Create your tests here.

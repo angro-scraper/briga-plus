@@ -1,7 +1,14 @@
 import datetime
+import uuid
 
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
+from django.utils import timezone
+
+
+def default_invite_expiry():
+    return timezone.now() + datetime.timedelta(days=7)
 
 class Family(models.Model):
     name = models.CharField('naziv porodice', max_length=120)
@@ -13,14 +20,43 @@ class Membership(models.Model):
         ADMIN = 'admin', 'Administrator porodice'
         CAREGIVER = 'caregiver', 'Član porodice'
         SENIOR = 'senior', 'Osoba o kojoj se brine'
+
+    class AccessLevel(models.TextChoices):
+        BASIC = 'basic', 'Osnovni pristup'
+        HEALTH = 'health', 'Zdravstveni pristup'
+        FULL = 'full', 'Pun porodični pristup'
     family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='memberships')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='family_memberships')
     role = models.CharField(max_length=16, choices=Role.choices)
+    access_level = models.CharField(max_length=16, choices=AccessLevel.choices, default=AccessLevel.FULL)
     alert_after_minutes = models.PositiveIntegerField(default=120)
     checkin_due_time = models.TimeField(default=datetime.time(10, 0))
     gentle_reminder_minutes = models.PositiveIntegerField(default=30)
     class Meta: unique_together = ('family', 'user')
     def __str__(self): return f'{self.user} — {self.family}'
+
+
+class FamilyInvite(models.Model):
+    family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='invites')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_family_invites')
+    recipient_label = models.CharField(max_length=120, blank=True)
+    role = models.CharField(max_length=16, choices=Membership.Role.choices)
+    access_level = models.CharField(max_length=16, choices=Membership.AccessLevel.choices, default=Membership.AccessLevel.BASIC)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    expires_at = models.DateTimeField(default=default_invite_expiry)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    accepted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='accepted_family_invites')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    @property
+    def available(self):
+        return self.accepted_at is None and self.expires_at > timezone.now()
+
+    def get_absolute_url(self):
+        return reverse('poziv', kwargs={'token': self.token})
 
 
 class EmergencyContact(models.Model):

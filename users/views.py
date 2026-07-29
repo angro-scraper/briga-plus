@@ -17,7 +17,7 @@ from alerts.push import send_push_alert
 from caretasks.models import CareTask
 from checkins.models import CheckIn, DailyRoutine, HealthLog, MoodEntry, RoutineCompletion
 from emergencies.models import EmergencyAlert
-from families.models import CareDevice, CareDocument, CareProfile, EmergencyContact, Family, FamilyVisit, Membership
+from families.models import CareDevice, CareDocument, CareProfile, EmergencyContact, Family, FamilyInvite, FamilyVisit, Membership
 from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
 
@@ -32,6 +32,22 @@ def notify_family(family, sender, kind, title, body='', url='/'):
 
 
 def can_coordinate(membership):
+    return membership and (
+        membership.role == Membership.Role.ADMIN or
+        (membership.role == Membership.Role.CAREGIVER and membership.access_level == Membership.AccessLevel.FULL)
+    )
+
+
+def can_view_health(membership):
+    return membership and (
+        membership.role in {Membership.Role.ADMIN, Membership.Role.SENIOR} or
+        (membership.role == Membership.Role.CAREGIVER and membership.access_level in {
+            Membership.AccessLevel.HEALTH, Membership.AccessLevel.FULL,
+        })
+    )
+
+
+def can_support_family(membership):
     return membership and membership.role in {Membership.Role.ADMIN, Membership.Role.CAREGIVER}
 
 
@@ -49,6 +65,42 @@ def register(request):
     return render(request, 'registration/register.html', {'form': form})
 
 
+def accept_invite(request, token):
+    invite = FamilyInvite.objects.select_related('family', 'created_by').filter(token=token).first()
+    if not invite or not invite.available:
+        return render(request, 'registration/invite_invalid.html', status=404)
+
+    if request.user.is_authenticated:
+        membership, created = Membership.objects.get_or_create(
+            family=invite.family,
+            user=request.user,
+            defaults={'role': invite.role, 'access_level': invite.access_level},
+        )
+        if created:
+            invite.accepted_at = timezone.now()
+            invite.accepted_by = request.user
+            invite.save(update_fields=['accepted_at', 'accepted_by'])
+            messages.success(request, 'Uspešno ste se pridružili porodičnom krugu.')
+        else:
+            messages.info(request, 'Već ste deo ovog porodičnog kruga.')
+        return redirect('pocetna')
+
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            Membership.objects.create(family=invite.family, user=user, role=invite.role, access_level=invite.access_level)
+            invite.accepted_at = timezone.now()
+            invite.accepted_by = user
+            invite.save(update_fields=['accepted_at', 'accepted_by'])
+            login(request, user)
+            messages.success(request, 'Nalog je napravljen i sada ste u porodičnom krugu.')
+            return redirect('pocetna')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/invite_register.html', {'form': form, 'invite': invite})
+
+
 def service_worker(request):
     return render(request, 'service-worker.js', content_type='application/javascript')
 
@@ -64,12 +116,14 @@ def protected_media(request, path):
     document = CareDocument.objects.filter(document=path).select_related('user').first()
     if reminder:
         family_ids = request.user.family_memberships.values_list('family_id', flat=True)
-        allowed = reminder.user_id == request.user.id or Membership.objects.filter(family_id__in=family_ids, user=reminder.user).exists()
+        viewer_memberships = Membership.objects.filter(user=request.user, family_id__in=family_ids)
+        allowed = reminder.user_id == request.user.id or any(can_view_health(item) for item in viewer_memberships)
     elif voice:
         allowed = voice.family.memberships.filter(user=request.user).exists()
     elif document:
         family_ids = request.user.family_memberships.values_list('family_id', flat=True)
-        allowed = document.user_id == request.user.id or Membership.objects.filter(family_id__in=family_ids, user=document.user).exists()
+        viewer_memberships = Membership.objects.filter(user=request.user, family_id__in=family_ids)
+        allowed = document.user_id == request.user.id or any(can_view_health(item) for item in viewer_memberships)
     else:
         allowed = False
     if not allowed:
@@ -105,7 +159,8 @@ def dashboard(request):
     membership = memberships.filter(family__memberships__role=Membership.Role.SENIOR).distinct().first() or memberships.first()
     family = membership.family if membership else None
     senior_membership = family.memberships.filter(role=Membership.Role.SENIOR).select_related('user').first() if family else None
-    care_user = senior_membership.user if senior_membership and can_coordinate(membership) else request.user
+    health_access = can_view_health(membership)
+    care_user = senior_membership.user if senior_membership and health_access else request.user
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -306,13 +361,29 @@ def dashboard(request):
             )
         elif action == 'sos_resolve' and family and can_coordinate(membership):
             family.emergencies.filter(pk=request.POST.get('sos_id')).update(resolved_at=timezone.now())
-        elif action == 'invite' and family and membership.role == Membership.Role.ADMIN:
-            invited = User.objects.filter(username=request.POST.get('username', '').strip()).first()
-            if invited:
-                Membership.objects.get_or_create(family=family, user=invited, defaults={'role': request.POST.get('role', Membership.Role.CAREGIVER)})
-                messages.success(request, 'Član porodice je dodat.')
+        elif action == 'invite_create' and family and membership.role == Membership.Role.ADMIN:
+            role = request.POST.get('role')
+            access_level = request.POST.get('access_level', Membership.AccessLevel.BASIC)
+            if role not in {Membership.Role.CAREGIVER, Membership.Role.SENIOR}:
+                messages.error(request, 'Pozivnica mora biti za člana porodice ili čuvano lice.')
+            elif access_level not in Membership.AccessLevel.values:
+                messages.error(request, 'Nivo pristupa nije ispravan.')
             else:
-                messages.error(request, 'Korisnik nije pronađen. Neka najpre napravi nalog.')
+                if role == Membership.Role.SENIOR:
+                    access_level = Membership.AccessLevel.BASIC
+                FamilyInvite.objects.create(
+                    family=family, created_by=request.user,
+                    recipient_label=request.POST.get('recipient_label', '').strip()[:120],
+                    role=role, access_level=access_level,
+                )
+                messages.success(request, 'Pozivnica je napravljena. Kopirajte bezbedan link iz kartice Porodica.')
+        elif action == 'member_access' and family and membership.role == Membership.Role.ADMIN:
+            target = family.memberships.filter(pk=request.POST.get('membership_id'), role=Membership.Role.CAREGIVER).first()
+            access_level = request.POST.get('access_level')
+            if target and access_level in Membership.AccessLevel.values:
+                target.access_level = access_level
+                target.save(update_fields=['access_level'])
+                messages.success(request, f'Pristup je ažuriran za {target.user.first_name or target.user.username}.')
         elif action == 'alert_read':
             request.user.alerts.filter(pk=request.POST.get('alert_id')).update(read_at=timezone.now())
         elif action == 'safety_settings' and family and membership.role == Membership.Role.ADMIN:
@@ -358,6 +429,11 @@ def dashboard(request):
         'open_tasks': family.tasks.filter(done=False)[:10] if family else [],
         'overdue_tasks': family.tasks.filter(done=False, due_at__lt=now)[:10] if family else [],
     }
+    family_invites = []
+    if family and membership.role == Membership.Role.ADMIN:
+        for invite in family.invites.filter(accepted_at__isnull=True, expires_at__gt=now)[:8]:
+            invite.share_url = request.build_absolute_uri(invite.get_absolute_url())
+            family_invites.append(invite)
     return render(request, 'dashboard.html', {
         'family': family, 'membership': membership, 'care_person': care_user,
         'last_checkin': care_user.checkins.first(), 'reminders': active_reminders[:8], 'next_reminder': next_reminder,
@@ -373,6 +449,9 @@ def dashboard(request):
         'mood_today': MoodEntry.objects.filter(user=care_user, recorded_on=timezone.localdate()).first(), 'recent_moods': care_user.mood_entries.all()[:7],
         'care_profile': care_profile, 'documents': care_user.care_documents.all()[:8], 'devices': care_user.care_devices.all()[:5], 'visits': family.visits.select_related('visitor').filter(scheduled_for__gte=now - timedelta(days=1))[:8] if family else [],
         'push_public_key': settings.VAPID_PUBLIC_KEY,
+        'has_health_access': health_access, 'can_manage_care': can_coordinate(membership),
+        'is_family_panel': membership.role != Membership.Role.SENIOR,
+        'family_invites': family_invites,
     })
 
 
