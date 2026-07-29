@@ -221,6 +221,14 @@ def dashboard(request):
         'open_tasks': family.tasks.filter(done=False).count() if family else 0,
         'overdue_tasks': family.tasks.filter(done=False, due_at__lt=now).count() if family else 0,
     }
+    week_details = {
+        'checkins': care_user.checkins.filter(created_at__gte=week_start)[:10],
+        'taken': care_user.reminders.filter(completed_at__gte=week_start)[:10],
+        'missed': care_user.reminders.filter(completed_at__isnull=True, scheduled_for__lt=now)[:10],
+        'upcoming': care_user.reminders.filter(completed_at__isnull=True, scheduled_for__range=(now, week_end))[:10],
+        'open_tasks': family.tasks.filter(done=False)[:10] if family else [],
+        'overdue_tasks': family.tasks.filter(done=False, due_at__lt=now)[:10] if family else [],
+    }
     return render(request, 'dashboard.html', {
         'family': family, 'membership': membership, 'care_person': care_user,
         'last_checkin': care_user.checkins.first(), 'reminders': active_reminders[:8], 'next_reminder': next_reminder,
@@ -230,6 +238,6 @@ def dashboard(request):
         'sos_active': family.emergencies.filter(resolved_at__isnull=True).first() if family else None,
         'members': family.memberships.select_related('user').all() if family else [],
         'contacts': family.emergency_contacts.all() if family else [],
-        'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'unread_alert_count': request.user.alerts.filter(read_at__isnull=True).count(), 'care_week': care_week,
+        'alerts': request.user.alerts.filter(read_at__isnull=True)[:6], 'unread_alert_count': request.user.alerts.filter(read_at__isnull=True).count(), 'care_week': care_week, 'week_details': week_details,
         'push_public_key': settings.VAPID_PUBLIC_KEY,
     })
