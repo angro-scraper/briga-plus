@@ -1,0 +1,42 @@
+workflows:
+  ios-testflight:
+    name: Briga+ iOS — TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: rs.brigaplus.app
+      vars:
+        XCODE_PROJECT: mobile/ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+    scripts:
+      - name: Instalacija mobilnih zavisnosti
+        script: |
+          cd mobile
+          npm ci
+      - name: Sinhronizacija iOS omota
+        script: |
+          cd mobile
+          npx cap sync ios
+      - name: Podešavanje Apple potpisivanja
+        script: |
+          xcode-project use-profiles \
+            --custom-export-options='{"testFlightInternalTestingOnly": true}'
+      - name: Arhiviranje Briga+ iOS aplikacije
+        script: |
+          xcodebuild \
+            -project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$CM_BUILD_DIR/build/BrigaPlus.xcarchive" \
+            archive
+      - name: Izvoz IPA paketa
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath "$CM_BUILD_DIR/build/BrigaPlus.xcarchive" \
+            -exportOptionsPlist "$HOME/export_options.plist" \
+            -exportPath "$CM_BUILD_DIR/build/ipa"
+    artifacts:
+      - build/ipa/*.ipa
