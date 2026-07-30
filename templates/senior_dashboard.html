@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#16745a">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/senior-panel.css?v=1">
+  <title>Briga+ | Moj dan</title>
+</head>
+<body class="senior-panel-page">
+  <header class="senior-topbar">
+    <a class="senior-brand" href="/moj-dan/" aria-label="Briga+ moj dan"><img src="/static/briga-mark.svg" alt=""> Briga<span>+</span></a>
+    <div><a class="senior-link" href="/jednostavno/">Jednostavan ekran</a><form method="post" action="{% url 'odjava' %}">{% csrf_token %}<button>Odjava</button></form></div>
+  </header>
+
+  <main class="senior-shell">
+    {% for message in messages %}<div class="senior-flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+    <section class="senior-welcome"><p>MOJ DAN</p><h1>Zdravo, {{ user.first_name|default:user.username }}.</h1><span>{% now "l, d. F" %}</span></section>
+
+    {% if active_sos %}<section class="sos-active"><b>SOS je aktivan.</b><p>Porodica je obaveštena.{% if active_sos.responder_en_route_at %} Neko je krenuo ka vama.{% elif active_sos.acknowledged_at %} Porodica je videla vaš SOS.{% endif %}</p></section>{% endif %}
+
+    <section class="senior-sos" aria-label="Hitna pomoć">
+      <div><span>HITNA POMOĆ</span><h2>Treba mi pomoć</h2><p>Porodica odmah dobija SOS i vašu GPS lokaciju.</p></div>
+      <form id="senior-sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><button type="submit">SOS — POZOVI POMOĆ</button><p id="senior-sos-status" aria-live="polite"></p></form>
+    </section>
+
+    <section class="senior-action-grid" aria-label="Najvažnije stvari">
+      <article class="senior-action checkin"><span class="action-icon">✓</span><p>DNEVNA POTVRDA</p><h2>Dobro sam</h2><small>Jednim dodirom javite porodici.</small><form method="post">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button>Pošalji „Dobro sam”</button></form></article>
+      <article class="senior-action reminder"><span class="action-icon">◷</span><p>SLEDEĆA OBAVEZA</p>{% if next_reminder %}<h2>{{ next_reminder.title }}</h2><small>{{ next_reminder.scheduled_for|date:"H:i" }}{% if next_reminder.dosage %} · {{ next_reminder.dosage }}{% endif %}</small><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ next_reminder.id }}"><button>Urađeno ✓</button></form>{% else %}<h2>Mirno je</h2><small>Trenutno nema obaveza.</small>{% endif %}</article>
+      <article class="senior-action call"><span class="action-icon">☎</span><p>PORODICA JE TU</p>{% if contacts %}<h2>{{ contacts.0.name }}</h2><small>{% if contacts.0.relationship %}{{ contacts.0.relationship }}{% else %}Brzi porodični poziv{% endif %}</small><a href="tel:{{ contacts.0.phone|urlencode }}">Pozovi sada</a>{% else %}<h2>Treba mi poziv</h2><small>Porodica može dodati kontakt.</small><form method="post">{% csrf_token %}<input type="hidden" name="action" value="help_request"><input type="hidden" name="kind" value="call"><button>Pošalji zahtev</button></form>{% endif %}</article>
+      <article class="senior-action mood"><span class="action-icon">☺</span><p>KAKO SE OSEĆAM</p><h2>{% if mood_today %}Danas: {{ mood_today.get_mood_display }}{% else %}Kako ste danas?{% endif %}</h2><small>Izaberite jednu opciju.</small><div class="mood-buttons"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="good"><button aria-label="Dobro">☺</button></form><form method="post">{% csrf_token %}<input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="tired"><button aria-label="Umorno">◔</button></form><form method="post">{% csrf_token %}<input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="low"><button aria-label="Loše">☹</button></form></div></article>
+    </section>
+
+    <section class="senior-routine-section"><div class="section-heading"><div><p>MOJ JEDNOSTAVAN PLAN</p><h2>Danas za mene</h2></div><b>{{ routine_done_count }}/{{ routines|length }}</b></div><div class="senior-routine-list">{% for routine in routines %}<article class="{% if routine.completed_today %}done{% endif %}"><div><b>{{ routine.title }}</b><small>{{ routine.get_part_of_day_display }}</small></div>{% if routine.completed_today %}<span>Urađeno ✓</span>{% else %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="routine_done"><input type="hidden" name="routine_id" value="{{ routine.id }}"><button>Urađeno</button></form>{% endif %}</article>{% empty %}<p>Porodica će ovde dodati kratke korake za dan.</p>{% endfor %}</div></section>
+
+    <section class="senior-secondary-grid">
+      <button class="senior-open-card health-card" type="button" data-dialog="health"><span>♥</span><b>Zdravstveni dnevnik</b><small>Pritisak, simptomi, beleške i dokumenta</small></button>
+      <button class="senior-open-card support-card" type="button" data-dialog="help"><span>✦</span><b>Treba mi pomoć</b><small>Pošaljite poruku porodici, bez SOS-a</small></button>
+      {% if next_visit %}<article class="visit-card"><span>⌂</span><b>Sledeća poseta</b><p>{{ next_visit.visitor.first_name|default:next_visit.visitor.username }} · {{ next_visit.scheduled_for|date:"d.m. u H:i" }}</p></article>{% endif %}
+    </section>
+  </main>
+
+  <dialog class="senior-dialog" id="health"><header><button class="senior-back" type="button">← Nazad</button><div><p>ZDRAVLJE</p><h2>Zdravstveni dnevnik</h2></div></header><p class="dialog-lead">Sačuvajte vrednost, napomenu, fotografiju dokumenta ili PDF. Porodica sa zdravstvenim pristupom može da ga vidi.</p><button id="read-health" class="read-button" type="button">🔊 Pročitaj poslednje unose — Sophie</button><div class="health-list">{% for log in health_logs %}<article><time>{{ log.recorded_at|date:"d.m. H:i" }}</time><div><b>{{ log.get_kind_display }}{% if log.value %} · {{ log.value }}{% endif %}</b><p>{{ log.note|default:"Bez dodatne napomene." }}</p>{% if log.attachment %}<a href="{% url 'zasticeni_mediji' log.attachment.name %}">Otvori priloženi dokument</a>{% endif %}</div></article>{% empty %}<p>Još nema unosa.</p>{% endfor %}</div><form method="post" enctype="multipart/form-data" class="senior-form">{% csrf_token %}<input type="hidden" name="action" value="health_log"><h3>Novi unos</h3><label>Vrsta<select name="kind"><option value="pressure">Krvni pritisak</option><option value="glucose">Šećer u krvi</option><option value="symptom">Simptom / kako se osećam</option><option value="note">Napomena</option></select></label><label>Vrednost<input name="value" maxlength="80" placeholder="npr. 125/80"></label><label>Opis<input name="note" maxlength="300" placeholder="Kako se osećate?"></label><label>Vreme unosa<input type="datetime-local" name="recorded_at"></label><label class="attachment-field">Fotografija dokumenta ili PDF<input type="file" name="attachment" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment"><small>Na telefonu možete slikati dokument kamerom.</small></label><button>Sačuvaj u dnevnik</button></form></dialog>
+
+  <dialog class="senior-dialog" id="help"><header><button class="senior-back" type="button">← Nazad</button><div><p>PORODIČNA PODRŠKA</p><h2>Treba mi pomoć</h2></div></header><p class="dialog-lead">Ovo nije SOS. Porodica dobija poruku i može da vam se javi.</p><form method="post" class="senior-form">{% csrf_token %}<input type="hidden" name="action" value="help_request"><input type="hidden" name="kind" value="help"><label>Šta vam treba?<input name="note" maxlength="280" required placeholder="npr. Treba mi pomoć oko ručka"></label><button>Pošalji porodici</button></form></dialog>
+
+  <script>
+    document.querySelectorAll('[data-dialog]').forEach(button=>button.addEventListener('click',()=>document.getElementById(button.dataset.dialog).showModal()));
+    document.querySelectorAll('.senior-back').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
+    const sos=document.querySelector('#senior-sos'),sosStatus=document.querySelector('#senior-sos-status');
+    sos.addEventListener('submit',event=>{if(sos.dataset.ready)return;event.preventDefault();if(!confirm('Da li želite da pošaljete SOS porodici?'))return;const send=message=>{sosStatus.textContent=message;sos.dataset.ready='1';sos.submit()};if(!navigator.geolocation){send('SOS se šalje bez GPS lokacije.');return} sosStatus.textContent='Učitavamo GPS lokaciju…';navigator.geolocation.getCurrentPosition(position=>{sos.latitude.value=position.coords.latitude;sos.longitude.value=position.coords.longitude;send('GPS lokacija je učitana. Šaljemo SOS…')},()=>send('GPS nije dostupan. SOS se šalje bez lokacije.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
+    const readHealth=document.querySelector('#read-health');let speaking=false;const voices=()=>new Promise(resolve=>{const current=speechSynthesis.getVoices();if(current.length)return resolve(current);speechSynthesis.addEventListener('voiceschanged',()=>resolve(speechSynthesis.getVoices()),{once:true});setTimeout(()=>resolve(speechSynthesis.getVoices()),1200)});if(readHealth)readHealth.addEventListener('click',async()=>{if(!('speechSynthesis'in window)){readHealth.textContent='Čitanje naglas nije podržano.';return}if(speaking){speechSynthesis.cancel();return}readHealth.textContent='Pripremamo Sophie glas…';const voice=(await voices()).find(item=>/sophie/i.test(item.name)&&/^sr/i.test(item.lang));if(!voice){readHealth.textContent='Sophie srpski glas nije dostupan na ovom uređaju.';return}const entries=[...document.querySelectorAll('.health-list article')].map(item=>item.innerText.replace(/\s+/g,' ').trim());const utterance=new SpeechSynthesisUtterance(entries.length?`Zdravstveni dnevnik. ${entries.join('. ')}. Kraj unosa.`:'Zdravstveni dnevnik je trenutno prazan.');utterance.lang='sr-RS';utterance.voice=voice;utterance.rate=.82;utterance.onstart=()=>{speaking=true;readHealth.textContent='■ Zaustavi čitanje'};utterance.onend=utterance.onerror=()=>{speaking=false;readHealth.textContent='🔊 Pročitaj poslednje unose — Sophie'};speechSynthesis.speak(utterance)});
+  </script>
+  <script src="/static/mobile-enhancements.js"></script>
+</body>
+</html>

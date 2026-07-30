@@ -312,6 +312,40 @@ class DashboardFlowTests(TestCase):
         self.client.force_login(stranger)
         self.assertEqual(self.client.get(document.document.url).status_code, 404)
 
+    def test_health_log_accepts_private_pdf_or_document_photo(self):
+        senior = User.objects.create_user('baka_dnevnik', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        upload = SimpleUploadedFile('pritisak.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        self.client.post('/', {
+            'action': 'health_log', 'kind': 'pressure', 'value': '125/80',
+            'note': 'Jutarnje merenje', 'attachment': upload,
+        })
+        log = HealthLog.objects.get(user=senior, value='125/80')
+        self.assertTrue(log.attachment.name.startswith('health_logs/'))
+        self.assertEqual(self.client.get(log.attachment.url).status_code, 200)
+        stranger = User.objects.create_user('stranac_dnevnik', password='bezbedna-lozinka-123')
+        self.client.force_login(stranger)
+        self.assertEqual(self.client.get(log.attachment.url).status_code, 404)
+
+    def test_cared_person_is_sent_to_a_separate_personal_panel(self):
+        senior = User.objects.create_user('olga_panel', password='bezbedna-lozinka-123', first_name='Olga')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+        response = self.client.get('/')
+        self.assertContains(response, 'MOJ DAN')
+        self.assertContains(response, 'SOS — POZOVI POMOĆ')
+
+    def test_cared_person_can_add_pdf_to_personal_health_diary(self):
+        senior = User.objects.create_user('gordana_panel', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+        upload = SimpleUploadedFile('nalaz.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        response = self.client.post('/moj-dan/', {
+            'action': 'health_log', 'kind': 'note', 'note': 'Nalaz je dodat.', 'attachment': upload,
+        })
+        self.assertRedirects(response, '/moj-dan/')
+        self.assertTrue(HealthLog.objects.filter(user=senior, attachment__startswith='health_logs/').exists())
+
     def test_senior_can_open_simple_screen(self):
         senior = User.objects.create_user('olga', password='bezbedna-lozinka-123')
         Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)

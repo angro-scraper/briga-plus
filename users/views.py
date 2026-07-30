@@ -76,6 +76,18 @@ def can_support_family(membership):
     return membership and membership.role in {Membership.Role.ADMIN, Membership.Role.CAREGIVER}
 
 
+HEALTH_ATTACHMENT_TYPES = {'application/pdf', 'image/jpeg', 'image/png', 'image/webp'}
+HEALTH_ATTACHMENT_LIMIT = 10 * 1024 * 1024
+
+
+def valid_health_attachment(uploaded):
+    """Prihvatamo samo dokument ili fotografiju do 10 MB."""
+    return not uploaded or (
+        uploaded.size <= HEALTH_ATTACHMENT_LIMIT and
+        uploaded.content_type in HEALTH_ATTACHMENT_TYPES
+    )
+
+
 def remember_senior_device(request, user):
     """Čuvanom licu ne tražimo ponovnu prijavu na istom uređaju godinu dana."""
     if Membership.objects.filter(user=user, role=Membership.Role.SENIOR).exists():
@@ -321,6 +333,7 @@ def protected_media(request, path):
     reminder = Reminder.objects.filter(package_photo=path).select_related('user').first()
     voice = VoiceMessage.objects.filter(audio=path).select_related('family').first()
     document = CareDocument.objects.filter(document=path).select_related('user').first()
+    health_log = HealthLog.objects.filter(attachment=path).select_related('user').first()
     if reminder:
         family_ids = request.user.family_memberships.values_list('family_id', flat=True)
         viewer_memberships = Membership.objects.filter(user=request.user, family_id__in=family_ids)
@@ -331,12 +344,16 @@ def protected_media(request, path):
         family_ids = request.user.family_memberships.values_list('family_id', flat=True)
         viewer_memberships = Membership.objects.filter(user=request.user, family_id__in=family_ids)
         allowed = document.user_id == request.user.id or any(can_view_health(item) for item in viewer_memberships)
+    elif health_log:
+        family_ids = request.user.family_memberships.values_list('family_id', flat=True)
+        viewer_memberships = Membership.objects.filter(user=request.user, family_id__in=family_ids)
+        allowed = health_log.user_id == request.user.id or any(can_view_health(item) for item in viewer_memberships)
     else:
         allowed = False
     if not allowed:
         raise Http404
     try:
-        return FileResponse(default_storage.open(path, 'rb'), as_attachment=bool(document))
+        return FileResponse(default_storage.open(path, 'rb'), as_attachment=bool(document or health_log))
     except OSError as error:
         raise Http404 from error
 
@@ -388,6 +405,10 @@ def dashboard(request):
         return redirect('kontrola')
     family = membership.family if membership else None
     senior_membership = family.memberships.filter(role=Membership.Role.SENIOR).select_related('user').first() if family else None
+    # URL ostaje jednostavan (/), ali se za čuvano lice odmah prikazuje
+    # potpuno odvojeni lični panel — nikada porodički upravljački ekran.
+    if membership and membership.role == Membership.Role.SENIOR:
+        return senior_dashboard(request)
     health_access = can_view_health(membership)
     care_user = senior_membership.user if senior_membership and health_access else request.user
 
@@ -469,18 +490,24 @@ def dashboard(request):
             if visit and status in FamilyVisit.Status.values and (visit.visitor_id == request.user.id or membership.role == Membership.Role.ADMIN):
                 visit.status = status
                 visit.save(update_fields=['status'])
-        elif action == 'health_log' and family and (membership.role == Membership.Role.SENIOR or can_coordinate(membership)):
+        elif action == 'health_log' and family and can_coordinate(membership):
             kind = request.POST.get('kind')
             value = request.POST.get('value', '').strip()[:80]
             note = request.POST.get('note', '').strip()[:300]
+            attachment = request.FILES.get('attachment')
             try:
                 recorded_at = timezone.datetime.fromisoformat(request.POST.get('recorded_at', ''))
                 if timezone.is_naive(recorded_at):
                     recorded_at = timezone.make_aware(recorded_at)
             except ValueError:
                 recorded_at = timezone.now()
-            if kind in HealthLog.Kind.values and (value or note):
-                HealthLog.objects.create(user=care_user, kind=kind, value=value, note=note, recorded_at=recorded_at)
+            if not valid_health_attachment(attachment):
+                messages.error(request, 'Prilog mora biti PDF ili fotografija manja od 10 MB.')
+            elif kind in HealthLog.Kind.values and (value or note or attachment):
+                HealthLog.objects.create(
+                    user=care_user, kind=kind, value=value, note=note,
+                    attachment=attachment, recorded_at=recorded_at,
+                )
         elif action == 'message' and family:
             body = request.POST.get('body', '').strip()
             if body:
@@ -708,6 +735,138 @@ def dashboard(request):
         'is_family_panel': membership.role != Membership.Role.SENIOR,
         'family_invites': family_invites,
         'privacy_current': PrivacyConsent.objects.filter(user=request.user, policy_version=PrivacyConsent.POLICY_VERSION).exists(),
+    })
+
+
+@never_cache
+@login_required
+def senior_dashboard(request):
+    """Zaseban, smiren početni ekran isključivo za čuvano lice."""
+    membership = request.user.family_memberships.filter(
+        role=Membership.Role.SENIOR,
+    ).select_related('family').first()
+    if not membership:
+        return redirect('pocetna')
+
+    family = membership.family
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'checkin':
+            note = request.POST.get('note', '').strip()[:240]
+            period = request.POST.get('period', CheckIn.Period.ANY)
+            if period not in CheckIn.Period.values:
+                period = CheckIn.Period.ANY
+            CheckIn.objects.create(user=request.user, note=note, period=period)
+            notify_family(family, request.user, Alert.Kind.CHECKIN, f'Potvrda: {request.user.username} je dobro', note)
+            messages.success(request, 'Porodici je poslata potvrda da ste dobro.')
+        elif action == 'routine_done':
+            routine = request.user.daily_routines.filter(
+                pk=request.POST.get('routine_id'), active=True,
+            ).first()
+            if routine:
+                RoutineCompletion.objects.get_or_create(
+                    routine=routine, completed_on=timezone.localdate(),
+                    defaults={'user': request.user},
+                )
+        elif action == 'reminder_done':
+            reminder = request.user.reminders.filter(
+                pk=request.POST.get('reminder_id'), completed_at__isnull=True,
+            ).first()
+            if reminder:
+                reminder.completed_at = timezone.now()
+                reminder.save(update_fields=['completed_at'])
+                if reminder.repeat_daily:
+                    next_time = reminder.scheduled_for + timedelta(days=1)
+                    while next_time <= timezone.now():
+                        next_time += timedelta(days=1)
+                    Reminder.objects.create(
+                        user=request.user, title=reminder.title, kind=reminder.kind,
+                        scheduled_for=next_time, repeat_daily=True,
+                        dosage=reminder.dosage, instructions=reminder.instructions,
+                        package_photo=reminder.package_photo.name,
+                    )
+                notify_family(
+                    family, request.user, Alert.Kind.REMINDER,
+                    f'Potvrđeno: {reminder.title}',
+                    f'{request.user.first_name or request.user.username} je potvrdio/la stavku terapije.',
+                )
+        elif action == 'mood':
+            mood = request.POST.get('mood')
+            if mood in MoodEntry.Mood.values:
+                MoodEntry.objects.update_or_create(
+                    user=request.user, recorded_on=timezone.localdate(),
+                    defaults={'mood': mood, 'note': request.POST.get('note', '').strip()[:240]},
+                )
+        elif action == 'health_log':
+            kind = request.POST.get('kind')
+            value = request.POST.get('value', '').strip()[:80]
+            note = request.POST.get('note', '').strip()[:300]
+            attachment = request.FILES.get('attachment')
+            try:
+                recorded_at = timezone.datetime.fromisoformat(request.POST.get('recorded_at', ''))
+                if timezone.is_naive(recorded_at):
+                    recorded_at = timezone.make_aware(recorded_at)
+            except ValueError:
+                recorded_at = timezone.now()
+            if not valid_health_attachment(attachment):
+                messages.error(request, 'Prilog mora biti PDF ili fotografija manja od 10 MB.')
+            elif kind in HealthLog.Kind.values and (value or note or attachment):
+                HealthLog.objects.create(
+                    user=request.user, kind=kind, value=value, note=note,
+                    attachment=attachment, recorded_at=recorded_at,
+                )
+                messages.success(request, 'Unos je sačuvan u zdravstveni dnevnik.')
+        elif action == 'sos':
+            emergency = EmergencyAlert.objects.create(
+                family=family, raised_by=request.user,
+                latitude=request.POST.get('latitude') or None,
+                longitude=request.POST.get('longitude') or None,
+                note=request.POST.get('note', '').strip()[:280],
+                kind=EmergencyAlert.Kind.SOS,
+            )
+            audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {'has_location': bool(emergency.latitude)})
+            notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
+            messages.error(request, 'SOS je poslat porodici.')
+        elif action == 'help_request':
+            kind = request.POST.get('kind', EmergencyAlert.Kind.CALL)
+            if kind in {EmergencyAlert.Kind.CALL, EmergencyAlert.Kind.UNWELL, EmergencyAlert.Kind.HELP}:
+                EmergencyAlert.objects.create(
+                    family=family, raised_by=request.user, kind=kind,
+                    note=request.POST.get('note', '').strip()[:280],
+                )
+                labels = {
+                    EmergencyAlert.Kind.CALL: 'traži poziv',
+                    EmergencyAlert.Kind.UNWELL: 'ne oseća se dobro',
+                    EmergencyAlert.Kind.HELP: 'traži pomoć',
+                }
+                notify_family(family, request.user, Alert.Kind.NEED_HELP, f'{request.user.username} {labels[kind]}', 'Otvorite Briga+ i javite se osobi.')
+                messages.success(request, 'Porodica je obaveštena.')
+        return redirect('panel_cuvanog_lica')
+
+    now = timezone.now()
+    routines = list(request.user.daily_routines.filter(active=True))
+    completed = set(RoutineCompletion.objects.filter(
+        routine__user=request.user, completed_on=timezone.localdate(),
+    ).values_list('routine_id', flat=True))
+    for routine in routines:
+        routine.completed_today = routine.id in completed
+    return render(request, 'senior_dashboard.html', {
+        'family': family,
+        'membership': membership,
+        'contacts': family.emergency_contacts.all(),
+        'routines': routines,
+        'routine_done_count': len(completed),
+        'next_reminder': request.user.reminders.filter(
+            completed_at__isnull=True, scheduled_for__gte=now,
+        ).first(),
+        'health_logs': request.user.health_logs.all()[:8],
+        'mood_today': MoodEntry.objects.filter(
+            user=request.user, recorded_on=timezone.localdate(),
+        ).first(),
+        'next_visit': family.visits.select_related('visitor').filter(scheduled_for__gte=now).first(),
+        'active_sos': family.emergencies.filter(
+            raised_by=request.user, resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS,
+        ).first(),
     })
 
 

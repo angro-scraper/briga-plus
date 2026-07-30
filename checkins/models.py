@@ -55,6 +55,9 @@ class HealthLog(models.Model):
     kind = models.CharField(max_length=16, choices=Kind.choices)
     value = models.CharField(max_length=80, blank=True)
     note = models.CharField(max_length=300, blank=True)
+    # Prilog može biti fotografija nalaza snimljena telefonom ili PDF iz ambulante.
+    # Fajl se servira isključivo kroz zaštićenu /media/ rutu.
+    attachment = models.FileField(upload_to='health_logs/', blank=True)
     recorded_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
