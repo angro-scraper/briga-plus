@@ -23,8 +23,9 @@ workflows:
           npx cap sync ios
       - name: Podešavanje Apple potpisivanja
         script: |
-          xcode-project use-profiles \
-            --custom-export-options='{"testFlightInternalTestingOnly": true}'
+          # Ovaj build je namenjen i za spoljnu TestFlight grupu.
+          # Bez "testFlightInternalTestingOnly" ograničenja Apple ga može poslati na Beta App Review.
+          xcode-project use-profiles
       - name: Arhiviranje Briga+ iOS aplikacije
         script: |
           xcodebuild \
