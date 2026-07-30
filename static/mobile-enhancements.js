@@ -107,8 +107,26 @@
       if (nativePush) {
         const permission = await nativePush.requestPermissions();
         if (permission.receive !== 'granted') throw new Error('Dozvola za obaveštenja nije data. Uključite je u podešavanjima telefona.');
-        pushStatus.textContent = 'Dozvola je odobrena. Nativna isporuka se aktivira čim Firebase/APNs budu povezani za Briga+.';
-        pushButton.textContent = 'Dozvola odobrena';
+        pushStatus.textContent = 'Dozvola je odobrena. Pripremamo ovaj telefon za Briga+ obaveštenja…';
+        pushButton.textContent = 'Povezujemo uređaj…';
+        let resultShown = false;
+        const finish = (message, enabled) => {
+          if (resultShown) return;
+          resultShown = true;
+          pushStatus.textContent = message;
+          pushButton.textContent = enabled ? 'Obaveštenja dozvoljena' : 'Pokušaj ponovo';
+          pushButton.disabled = enabled;
+        };
+        nativePush.addListener('registration', () => {
+          finish('Telefon je spreman za Briga+ obaveštenja. Isporuka SOS i podsetnika se uključuje nakon povezivanja Firebase/APNs naloga.', true);
+        });
+        nativePush.addListener('registrationError', () => {
+          finish('Dozvola je data, ali povezivanje telefona nije uspelo. Pokušajte ponovo kasnije.', false);
+        });
+        await nativePush.register();
+        window.setTimeout(() => {
+          finish('Dozvola je sačuvana. Za stvarnu isporuku na Android/iPhone potrebno je još povezati Firebase/APNs za Briga+.', true);
+        }, 5000);
         return;
       }
       if (!key) throw new Error('Push ključevi još nisu podešeni na serveru.');

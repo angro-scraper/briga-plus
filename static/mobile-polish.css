@@ -44,6 +44,11 @@
     border-radius: 15px;
     box-shadow: 0 10px 22px rgba(15, 107, 82, .22);
   }
+  .modal .chat-form .button.primary {
+    min-height: 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 22px rgba(15, 107, 82, .22);
+  }
   .modal-chat .voice-form {
     display: flex;
     align-items: center;
@@ -60,6 +65,8 @@
   #read-health-mobile { width: 100%; min-height: 48px; margin: 2px 0 4px; border-color: #8bcab2; color: #075b48; background: #effaf4; }
   .push-box { margin-top: auto; padding: 16px; border-radius: 16px; background: #eefaf4; }
   .push-box b { font-size: 16px; }
+  #push-status, #voice-status { display:block; min-height: 20px; line-height:1.4; }
+  #push-button-mobile[disabled] { opacity: .82; }
 }
 
 @media (max-width: 360px) {

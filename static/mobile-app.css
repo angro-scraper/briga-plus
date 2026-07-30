@@ -62,7 +62,7 @@
   .modal-head { position: sticky; top: -16px; z-index: 2; align-items: center; margin: -16px -15px 12px; padding: 13px 15px; background: rgba(249,252,250,.96); border-bottom: 1px solid #dceae4; backdrop-filter: blur(10px); }
   .modal-head h2 { font-size: 20px; }
   .modal-head .tool-icon { width: 35px; height: 35px; }
-  .modal-close { order: -1; width: auto; height: 38px; padding: 0 11px; border-radius: 11px; color: var(--brand); font-size: 0; font-weight: 850; }
+  .modal-close { order: -1; width: auto; min-width: 82px; height: 42px; padding: 0 12px; border-radius: 12px; color: var(--brand); font-size: 0; font-weight: 850; background:#fff; box-shadow:0 2px 8px rgba(21,55,44,.06); }
   .modal-close::after { content: "← Nazad"; font-size: 14px; }
   .modal-lead { font-size: 14px; }
   .modal .button, .modal .text-control { min-height: 44px; }
