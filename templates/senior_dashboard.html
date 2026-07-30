@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/static/senior-panel.css?v=2">
   <link rel="stylesheet" href="/static/senior-guidance.css?v=1">
   <link rel="stylesheet" href="/static/senior-design-refresh.css?v=1">
+  <link rel="stylesheet" href="/static/directional-mobile-home.css?v=1">
   <title>Briga+ | Moj dan</title>
 </head>
 <body class="senior-panel-page">
@@ -59,6 +60,7 @@
 
   <script>
     document.querySelectorAll('[data-dialog]').forEach(button=>button.addEventListener('click',()=>document.getElementById(button.dataset.dialog).showModal()));
+    const requestedDialog=new URLSearchParams(window.location.search).get('open');if(requestedDialog&&document.getElementById(requestedDialog)?.showModal)document.getElementById(requestedDialog).showModal();
     document.querySelectorAll('.senior-back').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
     const sos=document.querySelector('#senior-sos'),sosStatus=document.querySelector('#senior-sos-status');
     sos.addEventListener('submit',event=>{if(sos.dataset.ready)return;event.preventDefault();if(!confirm('Da li želite da pošaljete SOS porodici?'))return;const send=message=>{sosStatus.textContent=message;sos.dataset.ready='1';sos.submit()};if(!navigator.geolocation){send('SOS se šalje bez GPS lokacije.');return} sosStatus.textContent='Učitavamo GPS lokaciju…';navigator.geolocation.getCurrentPosition(position=>{sos.latitude.value=position.coords.latitude;sos.longitude.value=position.coords.longitude;send('GPS lokacija je učitana. Šaljemo SOS…')},()=>send('GPS nije dostupan. SOS se šalje bez lokacije.'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})});
