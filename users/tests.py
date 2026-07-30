@@ -64,6 +64,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
         self.assertContains(response, '/static/window-clarity.css?v=2')
+        self.assertContains(response, '/static/ios-card-layout.css?v=1')
 
     def test_registration_saves_required_contact_information(self):
         response = self.client.post('/registracija/', {

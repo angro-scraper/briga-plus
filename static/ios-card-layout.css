@@ -1,0 +1,50 @@
+/* Završna zaštita za iOS WebView: kartice i akcije ne smeju da se suze. */
+@media (max-width: 640px) {
+  .app-shell { overflow-x: hidden; }
+
+  .tool-grid,
+  .senior-account .tool-grid,
+  .care-extension-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .tool-card,
+  .care-extension-grid .tool-card,
+  .device-section .tool-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 46px minmax(0, 1fr) 38px !important;
+  }
+
+  .tool-card i,
+  .care-extension-grid .tool-card i,
+  .device-section .tool-card i {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    justify-self: stretch !important;
+    align-self: end;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .tool-card i::after,
+  .care-extension-grid .tool-card i::after,
+  .device-section .tool-card i::after {
+    white-space: nowrap;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .tool-grid,
+  .senior-account .tool-grid,
+  .care-extension-grid { grid-template-columns: 1fr !important; }
+}
