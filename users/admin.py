@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuditEvent, PrivacyConsent
+from .models import AuditEvent, PrivacyConsent, UserContactProfile
 
 
 @admin.register(PrivacyConsent)
@@ -16,5 +16,12 @@ class AuditEventAdmin(admin.ModelAdmin):
     list_filter = ('event',)
     search_fields = ('target', 'actor__username')
     readonly_fields = ('created_at',)
+
+
+@admin.register(UserContactProfile)
+class UserContactProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'phone', 'updated_at')
+    search_fields = ('user__username', 'user__email', 'phone', 'address')
+    readonly_fields = ('updated_at',)
 
 # Register your models here.

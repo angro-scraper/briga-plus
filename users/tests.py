@@ -7,7 +7,7 @@ from django.core.management import call_command
 from django.utils import timezone
 from django.contrib.auth.models import User
 from families.models import Membership
-from users.models import AuditEvent, PrivacyConsent
+from users.models import AuditEvent, PrivacyConsent, UserContactProfile
 from checkins.models import CheckIn
 from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
@@ -52,6 +52,30 @@ class DashboardFlowTests(TestCase):
         self.client.logout()
         response = self.client.get('/')
         self.assertRedirects(response, '/prijava/?next=/')
+
+    def test_registration_saves_required_contact_information(self):
+        response = self.client.post('/registracija/', {
+            'first_name': 'Ana', 'last_name': 'Petrović', 'email': 'ana@example.com',
+            'phone': '+381 64 123 4567', 'address': 'Kralja Petra 12, Beograd',
+            'username': 'ana.petrovic', 'password1': 'Bezbedna-lozinka-123',
+            'password2': 'Bezbedna-lozinka-123', 'privacy_consent': 'on',
+        })
+        self.assertRedirects(response, '/')
+        user = User.objects.get(username='ana.petrovic')
+        self.assertEqual(user.email, 'ana@example.com')
+        self.assertEqual(user.get_full_name(), 'Ana Petrović')
+        self.assertEqual(user.contact_profile.phone, '+381 64 123 4567')
+        self.assertEqual(user.contact_profile.address, 'Kralja Petra 12, Beograd')
+
+    def test_registration_rejects_duplicate_email(self):
+        User.objects.create_user('postojeci', email='ana@example.com', password='Bezbedna-lozinka-123')
+        response = self.client.post('/registracija/', {
+            'first_name': 'Nova', 'last_name': 'Osoba', 'email': 'ANA@example.com',
+            'phone': '+381641234567', 'address': 'Adresa 1', 'username': 'nova.osoba',
+            'password1': 'Bezbedna-lozinka-123', 'password2': 'Bezbedna-lozinka-123', 'privacy_consent': 'on',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nalog sa ovom e-mail adresom već postoji.')
 
     def test_logout_uses_post_and_returns_to_login(self):
         response = self.client.post('/odjava/')
@@ -225,6 +249,8 @@ class DashboardFlowTests(TestCase):
         response = self.client.get(invite.get_absolute_url())
         self.assertEqual(response.status_code, 200)
         response = self.client.post(invite.get_absolute_url(), {
+            'first_name': 'Jelena', 'last_name': 'Petrović', 'email': 'jelena@example.com',
+            'phone': '+381641112233', 'address': 'Bulevar oslobođenja 10, Novi Sad',
             'username': 'pozvana_jelena',
             'password1': 'bezbedna-lozinka-123',
             'password2': 'bezbedna-lozinka-123',
@@ -233,6 +259,7 @@ class DashboardFlowTests(TestCase):
         self.assertRedirects(response, '/')
         joined = User.objects.get(username='pozvana_jelena')
         self.assertTrue(Membership.objects.filter(family=self.family, user=joined, role=Membership.Role.SENIOR).exists())
+        self.assertEqual(joined.contact_profile.phone, '+381641112233')
         invite.refresh_from_db()
         self.assertEqual(invite.accepted_by, joined)
         self.assertTrue(PrivacyConsent.objects.filter(user=joined).exists())

@@ -15,6 +15,18 @@ class PrivacyConsent(models.Model):
         return f'Privatnost: {self.user}'
 
 
+class UserContactProfile(models.Model):
+    """Kontakt podaci naloga; ne prikazuju se javno niti drugim porodicama."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='contact_profile')
+    phone = models.CharField('broj telefona', max_length=32)
+    address = models.CharField('adresa', max_length=240)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Kontakt: {self.user}'
+
+
 class AuditEvent(models.Model):
     """Neizmenjiv, kratak trag radnji koje utiču na bezbednost i pristup."""
 

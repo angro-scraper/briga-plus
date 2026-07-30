@@ -25,7 +25,7 @@ from families.models import CareDevice, CareDocument, CareProfile, EmergencyCont
 from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
 from users.forms import BrigaRegistrationForm
-from users.models import AuditEvent, PrivacyConsent
+from users.models import AuditEvent, PrivacyConsent, UserContactProfile
 
 
 def audit(actor, event, family=None, target='', detail=None):
@@ -73,6 +73,11 @@ def register(request):
         form = BrigaRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            UserContactProfile.objects.create(
+                user=user,
+                phone=form.cleaned_data['phone'].strip(),
+                address=form.cleaned_data['address'].strip(),
+            )
             family = Family.objects.create(name=f'Porodica {user.username}')
             Membership.objects.create(user=user, family=family, role=Membership.Role.ADMIN)
             PrivacyConsent.objects.create(user=user)
@@ -108,6 +113,11 @@ def accept_invite(request, token):
         form = BrigaRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            UserContactProfile.objects.create(
+                user=user,
+                phone=form.cleaned_data['phone'].strip(),
+                address=form.cleaned_data['address'].strip(),
+            )
             Membership.objects.create(family=invite.family, user=user, role=invite.role, access_level=invite.access_level)
             PrivacyConsent.objects.create(user=user)
             audit(user, AuditEvent.Event.CONSENT, invite.family, 'Pozivnica', {'policy_version': PrivacyConsent.POLICY_VERSION})
