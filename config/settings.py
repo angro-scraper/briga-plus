@@ -153,6 +153,10 @@ AZURE_SPEECH_REGION = os.environ.get('BRIGA_AZURE_SPEECH_REGION', '')
 LOGIN_REDIRECT_URL = 'pocetna'
 LOGIN_URL = 'prijava'
 LOGOUT_REDIRECT_URL = 'prijava'
+# Čuvano lice ostaje prijavljeno na svom telefonu godinu dana. Sesija se ipak
+# odmah prekida odjavom, promenom lozinke, brisanjem podataka aplikacije ili
+# deaktivacijom naloga.
+SENIOR_SESSION_AGE = int(os.environ.get('BRIGA_SENIOR_SESSION_AGE', 60 * 60 * 24 * 365))
 CSRF_TRUSTED_ORIGINS = [host for host in os.environ.get('BRIGA_CSRF_TRUSTED_ORIGINS', '').split(',') if host]
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

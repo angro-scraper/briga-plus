@@ -82,6 +82,18 @@ class DashboardFlowTests(TestCase):
         self.assertRedirects(response, '/prijava/')
         self.assertNotIn('_auth_user_id', self.client.session)
 
+    def test_senior_login_remembers_the_device_for_a_year(self):
+        senior = User.objects.create_user('jelena', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.logout()
+
+        response = self.client.post('/prijava/', {
+            'username': 'jelena', 'password': 'bezbedna-lozinka-123',
+        })
+
+        self.assertRedirects(response, '/')
+        self.assertGreaterEqual(self.client.session.get_expiry_age(), 60 * 60 * 24 * 364)
+
     def test_senior_cannot_create_or_complete_family_task(self):
         senior = User.objects.create_user('jelena', password='bezbedna-lozinka-123')
         Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)

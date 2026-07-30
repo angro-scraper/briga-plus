@@ -19,13 +19,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import accept_invite, account, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
+from users.views import BrigaLoginView, accept_invite, account, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', dashboard, name='pocetna'),
     path('jednostavno/', senior_easy, name='jednostavno'),
-    path('prijava/', auth_views.LoginView.as_view(), name='prijava'),
+    path('prijava/', BrigaLoginView.as_view(), name='prijava'),
     path('odjava/', auth_views.LogoutView.as_view(), name='odjava'),
     path('registracija/', register, name='registracija'),
     path('poziv/<uuid:token>/', accept_invite, name='poziv'),

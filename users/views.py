@@ -10,6 +10,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
+from django.contrib.auth.views import LoginView
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -66,6 +67,27 @@ def can_view_health(membership):
 
 def can_support_family(membership):
     return membership and membership.role in {Membership.Role.ADMIN, Membership.Role.CAREGIVER}
+
+
+def remember_senior_device(request, user):
+    """Čuvanom licu ne tražimo ponovnu prijavu na istom uređaju godinu dana."""
+    if Membership.objects.filter(user=user, role=Membership.Role.SENIOR).exists():
+        request.session.set_expiry(settings.SENIOR_SESSION_AGE)
+        request.session.modified = True
+        return True
+    return False
+
+
+class BrigaLoginView(LoginView):
+    """Produžava prijavu samo za čuvano lice, nikada za ostale porodične naloge."""
+
+    template_name = 'registration/login.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if remember_senior_device(self.request, self.request.user):
+            messages.info(self.request, 'Ovaj uređaj je zapamćen. Prijava neće biti potrebna pri sledećem otvaranju aplikacije.')
+        return response
 
 
 def register(request):
@@ -125,7 +147,10 @@ def accept_invite(request, token):
             invite.accepted_by = user
             invite.save(update_fields=['accepted_at', 'accepted_by'])
             login(request, user)
-            messages.success(request, 'Nalog je napravljen i sada ste u porodičnom krugu.')
+            if remember_senior_device(request, user):
+                messages.success(request, 'Nalog je napravljen. Ovaj uređaj je zapamćen, pa prijava više neće biti potrebna na njemu.')
+            else:
+                messages.success(request, 'Nalog je napravljen i sada ste u porodičnom krugu.')
             return redirect('pocetna')
     else:
         form = BrigaRegistrationForm()
