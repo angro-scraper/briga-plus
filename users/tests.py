@@ -60,6 +60,11 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertRedirects(response, '/prijava/?next=/')
 
+    def test_dashboard_never_uses_a_stale_page_cache(self):
+        response = self.client.get('/')
+        self.assertIn('no-store', response['Cache-Control'])
+        self.assertContains(response, '/static/window-clarity.css?v=2')
+
     def test_registration_saves_required_contact_information(self):
         response = self.client.post('/registracija/', {
             'first_name': 'Ana', 'last_name': 'Petrović', 'email': 'ana@example.com',

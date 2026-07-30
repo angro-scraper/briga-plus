@@ -16,6 +16,7 @@ from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
 
 from alerts.models import Alert, PushSubscription
 from alerts.push import send_push_alert
@@ -358,6 +359,7 @@ def push_subscribe(request):
     return JsonResponse({'ok': True})
 
 
+@never_cache
 @login_required
 def dashboard(request):
     memberships = request.user.family_memberships.select_related('family')
@@ -686,6 +688,7 @@ def dashboard(request):
     })
 
 
+@never_cache
 @login_required
 def senior_easy(request):
     membership = request.user.family_memberships.filter(role=Membership.Role.SENIOR).select_related('family').first()
