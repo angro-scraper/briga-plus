@@ -164,7 +164,11 @@ def accept_invite(request, token):
 
 
 def service_worker(request):
-    return render(request, 'service-worker.js', content_type='application/javascript')
+    # iOS/WebView mora svaki put da proveri novu verziju servisnog radnika;
+    # statičke datoteke mogu ostati keširane odvojeno.
+    response = render(request, 'service-worker.js', content_type='application/javascript')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
 
 
 def health(request):

@@ -39,6 +39,12 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
 
+    def test_service_worker_is_never_reused_without_a_fresh_check(self):
+        response = self.client.get('/service-worker.js')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('no-cache', response['Cache-Control'])
+        self.assertContains(response, "briga-plus-v2")
+
     def test_sophie_speech_requires_configured_service(self):
         response = self.client.post(
             '/sophie-govor/',
