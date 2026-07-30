@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#16745a">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <link rel="stylesheet" href="/static/senior-panel.css?v=1">
+  <link rel="stylesheet" href="/static/senior-panel.css?v=2">
+  <link rel="stylesheet" href="/static/senior-guidance.css?v=1">
   <title>Briga+ | Moj dan</title>
 </head>
 <body class="senior-panel-page">
@@ -17,6 +18,16 @@
   <main class="senior-shell">
     {% for message in messages %}<div class="senior-flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
     <section class="senior-welcome"><p>MOJ DAN</p><h1>Zdravo, {{ user.first_name|default:user.username }}.</h1><span>{% now "l, d. F" %}</span></section>
+
+    <section class="voice-greeting" id="voice-greeting" data-name="{{ user.first_name|default:user.username|escape }}" aria-labelledby="voice-greeting-title">
+      <div class="voice-greeting-illustration" aria-hidden="true"><span>☀</span><i>♥</i></div>
+      <div class="voice-greeting-copy"><p id="voice-greeting-kicker">NEŽNI DNEVNI PODSETNIK</p><h2 id="voice-greeting-title">Kako ste ovog dela dana?</h2><p id="voice-greeting-text">Sophie vas kratko podseća da se javite porodici.</p></div>
+      <div class="voice-greeting-actions">
+        <button class="voice-listen" id="voice-listen" type="button">🔊 Čuj Sophie</button>
+        <form method="post">{% csrf_token %}<input id="voice-checkin-period" type="hidden" name="period" value="any"><input type="hidden" name="action" value="checkin"><button class="voice-checkin" type="submit">✓ Dobro sam</button></form>
+      </div>
+      <div class="voice-reminder-line"><span id="voice-reminder-status">Podsetnik u aplikaciji je spreman.</span><button id="voice-reminder-toggle" type="button">Uključi jutro, popodne i veče</button></div>
+    </section>
 
     {% if active_sos %}<section class="sos-active"><b>SOS je aktivan.</b><p>Porodica je obaveštena.{% if active_sos.responder_en_route_at %} Neko je krenuo ka vama.{% elif active_sos.acknowledged_at %} Porodica je videla vaš SOS.{% endif %}</p></section>{% endif %}
 
@@ -53,5 +64,6 @@
     const readHealth=document.querySelector('#read-health');let speaking=false;const voices=()=>new Promise(resolve=>{const current=speechSynthesis.getVoices();if(current.length)return resolve(current);speechSynthesis.addEventListener('voiceschanged',()=>resolve(speechSynthesis.getVoices()),{once:true});setTimeout(()=>resolve(speechSynthesis.getVoices()),1200)});if(readHealth)readHealth.addEventListener('click',async()=>{if(!('speechSynthesis'in window)){readHealth.textContent='Čitanje naglas nije podržano.';return}if(speaking){speechSynthesis.cancel();return}readHealth.textContent='Pripremamo Sophie glas…';const voice=(await voices()).find(item=>/sophie/i.test(item.name)&&/^sr/i.test(item.lang));if(!voice){readHealth.textContent='Sophie srpski glas nije dostupan na ovom uređaju.';return}const entries=[...document.querySelectorAll('.health-list article')].map(item=>item.innerText.replace(/\s+/g,' ').trim());const utterance=new SpeechSynthesisUtterance(entries.length?`Zdravstveni dnevnik. ${entries.join('. ')}. Kraj unosa.`:'Zdravstveni dnevnik je trenutno prazan.');utterance.lang='sr-RS';utterance.voice=voice;utterance.rate=.82;utterance.onstart=()=>{speaking=true;readHealth.textContent='■ Zaustavi čitanje'};utterance.onend=utterance.onerror=()=>{speaking=false;readHealth.textContent='🔊 Pročitaj poslednje unose — Sophie'};speechSynthesis.speak(utterance)});
   </script>
   <script src="/static/mobile-enhancements.js"></script>
+  <script src="/static/senior-guidance.js?v=1"></script>
 </body>
 </html>
