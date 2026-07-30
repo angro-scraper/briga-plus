@@ -40,3 +40,6 @@ workflows:
             -exportPath "$CM_BUILD_DIR/build/ipa"
     artifacts:
       - build/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
