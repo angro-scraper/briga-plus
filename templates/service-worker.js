@@ -12,8 +12,8 @@ self.addEventListener('push', event => {
   const payload = event.data ? event.data.json() : {};
   event.waitUntil(self.registration.showNotification(payload.title || 'Briga+', {
     body: payload.body || 'Imate novo obaveštenje.',
-    icon: '/static/manifest.webmanifest',
-    badge: '/static/manifest.webmanifest',
+    icon: '/static/briga-app-icon-512.png',
+    badge: '/static/briga-app-icon-512.png',
     data: { url: payload.url || '/' },
   }));
 });

@@ -1,3 +1,4 @@
+import json
 import os
 from unittest.mock import patch
 
@@ -37,6 +38,15 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
+
+    def test_sophie_speech_requires_configured_service(self):
+        response = self.client.post(
+            '/sophie-govor/',
+            data=json.dumps({'text': 'Poslednji unos je uredan.'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()['error'], 'Sophie servis još nije podešen.')
 
     def test_dashboard_redirects_to_briga_login(self):
         self.client.logout()

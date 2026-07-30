@@ -1,5 +1,8 @@
 import json
 from datetime import timedelta
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+from xml.sax.saxutils import escape
 
 from django.conf import settings
 from django.contrib import messages
@@ -8,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
-from django.http import FileResponse, Http404, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -131,6 +134,45 @@ def health(request):
         'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
         'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
     })
+
+
+@require_POST
+@login_required
+def sophie_speech(request):
+    """Čita samo Azure sr-RS-SophieNeural; nikada ne menja glas drugim naratorom."""
+    if not settings.AZURE_SPEECH_KEY or not settings.AZURE_SPEECH_REGION:
+        return JsonResponse({'ok': False, 'error': 'Sophie servis još nije podešen.'}, status=503)
+    try:
+        text = json.loads(request.body.decode('utf-8')).get('text', '').strip()
+    except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+        return JsonResponse({'ok': False, 'error': 'Tekst za čitanje nije ispravan.'}, status=400)
+    if not text or len(text) > 6000:
+        return JsonResponse({'ok': False, 'error': 'Tekst za čitanje nije ispravan.'}, status=400)
+    speech_markup = (
+        '<speak version="1.0" xml:lang="sr-RS">'
+        '<voice name="sr-RS-SophieNeural">'
+        f'{escape(text)}'
+        '</voice></speak>'
+    ).encode('utf-8')
+    request_to_speech = Request(
+        f'https://{settings.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1',
+        data=speech_markup,
+        headers={
+            'Ocp-Apim-Subscription-Key': settings.AZURE_SPEECH_KEY,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+            'User-Agent': 'BrigaPlus',
+        },
+        method='POST',
+    )
+    try:
+        with urlopen(request_to_speech, timeout=15) as response:
+            audio = response.read()
+    except (HTTPError, URLError, TimeoutError):
+        return JsonResponse({'ok': False, 'error': 'Sophie trenutno nije dostupna.'}, status=503)
+    response = HttpResponse(audio, content_type='audio/mpeg')
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 def privacy_policy(request):

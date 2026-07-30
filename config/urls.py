@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import accept_invite, account, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, terms
+from users.views import accept_invite, account, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -36,5 +36,6 @@ urlpatterns = [
     path('service-worker.js', service_worker, name='service-worker'),
     path('zdravlje/', health, name='zdravlje'),
     path('push-pretplata/', push_subscribe, name='push_pretplata'),
+    path('sophie-govor/', sophie_speech, name='sophie_govor'),
     path('media/<path:path>', protected_media, name='zasticeni_mediji'),
 ]

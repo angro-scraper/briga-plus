@@ -148,6 +148,8 @@ if BRIGA_DURABLE_MEDIA_CONFIGURED:
 VAPID_PUBLIC_KEY = os.environ.get('BRIGA_VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.environ.get('BRIGA_VAPID_PRIVATE_KEY', '')
 VAPID_SUBJECT = os.environ.get('BRIGA_VAPID_SUBJECT', 'mailto:podrska@briga-plus.rs')
+AZURE_SPEECH_KEY = os.environ.get('BRIGA_AZURE_SPEECH_KEY', '')
+AZURE_SPEECH_REGION = os.environ.get('BRIGA_AZURE_SPEECH_REGION', '')
 LOGIN_REDIRECT_URL = 'pocetna'
 LOGIN_URL = 'prijava'
 LOGOUT_REDIRECT_URL = 'prijava'

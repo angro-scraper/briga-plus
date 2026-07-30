@@ -1,0 +1,67 @@
+/* Završni mobilni raspored: veliki dodiri, jasne akcije i dve uredne kolone. */
+@media (max-width: 640px) {
+  .app-shell { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+  .hero-grid, .senior-account .hero-grid, .tool-grid, .senior-account .tool-grid, .care-extension-grid { gap: 12px; }
+  .tool-card, .care-extension-grid .tool-card, .device-section .tool-card {
+    min-height: 164px;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 44px 1fr auto;
+    align-content: stretch;
+    gap: 7px;
+    text-align: left;
+  }
+  .tool-card .tool-icon, .care-extension-grid .tool-icon, .device-section .tool-icon { width: 44px; height: 44px; }
+  .tool-card > span:nth-child(2) { align-self: start; }
+  .tool-card b, .care-extension-grid .tool-card b, .device-section .tool-card b { font-size: 15px; }
+  .tool-card small, .care-extension-grid .tool-card small, .device-section .tool-card small { font-size: 11px; }
+  .tool-card i {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    justify-self: stretch;
+    height: 32px;
+    margin-top: auto;
+    border-radius: 10px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 0;
+    font-style: normal;
+    box-shadow: none;
+  }
+  .tool-card i::after { content: "Otvori"; font-size: 11px; font-weight: 850; }
+  .device-section .tool-card { width: auto; }
+
+  .modal[open] { display: flex; flex-direction: column; }
+  .modal .item-list, .modal .contact-list, .modal .notification-list, .modal .visit-list, .modal .health-list { flex: 0 1 auto; }
+  .modal .modal-form { margin-top: auto; padding: 16px 0 max(16px, env(safe-area-inset-bottom)); }
+  .modal .modal-form .button.primary, .modal .push-box .button.primary {
+    position: sticky;
+    bottom: 8px;
+    width: 100%;
+    min-height: 52px;
+    border-radius: 15px;
+    box-shadow: 0 10px 22px rgba(15, 107, 82, .22);
+  }
+  .modal-chat .voice-form {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 12px 0 0;
+    padding: 10px;
+    border: 1px solid #cfe8dc;
+    border-radius: 14px;
+    background: #effaf4;
+  }
+  .modal-chat .voice-form .text-control { flex: 0 0 auto; min-height: 44px; border-color: #8bcab2; color: #075b48; background: #fff; }
+  .modal-chat .voice-form span { color: #315f51; font-size: 12px; }
+  .modal-chat .chat-form { bottom: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  #read-health-mobile { width: 100%; min-height: 48px; margin: 2px 0 4px; border-color: #8bcab2; color: #075b48; background: #effaf4; }
+  .push-box { margin-top: auto; padding: 16px; border-radius: 16px; background: #eefaf4; }
+  .push-box b { font-size: 16px; }
+}
+
+@media (max-width: 360px) {
+  .tool-card, .care-extension-grid .tool-card, .device-section .tool-card { min-height: 150px; }
+}
