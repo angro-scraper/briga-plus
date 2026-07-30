@@ -18,7 +18,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.cache import never_cache
 
-from alerts.models import Alert, PushSubscription
+from alerts.models import Alert, NativePushDevice, PushSubscription
 from alerts.push import send_push_alert
 from caretasks.models import CareTask
 from checkins.models import CheckIn, DailyRoutine, HealthLog, MoodEntry, RoutineCompletion
@@ -285,6 +285,7 @@ def account(request):
         'consent': consent,
         'policy_version': PrivacyConsent.POLICY_VERSION,
         'push_subscriptions': request.user.push_subscriptions.count(),
+        'native_push_devices': request.user.native_push_devices.count(),
     })
 
 
@@ -307,7 +308,7 @@ def control_center(request):
             'memberships': Membership.objects.count(),
             'open_invites': FamilyInvite.objects.filter(accepted_at__isnull=True, expires_at__gt=now).count(),
             'active_sos': EmergencyAlert.objects.filter(resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS).count(),
-            'push_devices': PushSubscription.objects.count(),
+            'push_devices': PushSubscription.objects.count() + NativePushDevice.objects.count(),
         },
         'active_emergencies': active_emergencies,
         'latest_invites': FamilyInvite.objects.select_related('family', 'created_by').all()[:8],
@@ -355,6 +356,25 @@ def push_subscribe(request):
     PushSubscription.objects.update_or_create(
         endpoint=endpoint,
         defaults={'user': request.user, 'p256dh': p256dh, 'auth': auth},
+    )
+    return JsonResponse({'ok': True})
+
+
+@require_POST
+@login_required
+def native_push_subscribe(request):
+    """Vezuje token telefona za nalog, bez čuvanja zdravstvenog sadržaja u tokenu."""
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        token = payload['token'].strip()
+        platform = payload['platform'].strip().lower()
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, AttributeError, TypeError):
+        return JsonResponse({'ok': False, 'error': 'Podaci uređaja nisu ispravni.'}, status=400)
+    if platform not in NativePushDevice.Platform.values or not 20 <= len(token) <= 512:
+        return JsonResponse({'ok': False, 'error': 'Podaci uređaja nisu ispravni.'}, status=400)
+    NativePushDevice.objects.update_or_create(
+        token=token,
+        defaults={'user': request.user, 'platform': platform},
     )
     return JsonResponse({'ok': True})
 

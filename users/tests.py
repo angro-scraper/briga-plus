@@ -16,7 +16,7 @@ from emergencies.models import EmergencyAlert
 from families.models import CareDocument, CareProfile, EmergencyContact, FamilyInvite, FamilyVisit
 from checkins.models import MoodEntry
 from django.core.files.uploadedfile import SimpleUploadedFile
-from alerts.models import Alert
+from alerts.models import Alert, NativePushDevice
 from messaging.models import Message
 
 class DashboardFlowTests(TestCase):
@@ -88,6 +88,16 @@ class DashboardFlowTests(TestCase):
         for path in ('/', '/nalog/', '/politika-privatnosti/', '/uslovi-koriscenja/', '/service-worker.js', '/zdravlje/'):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_native_phone_token_is_saved_for_the_signed_in_user(self):
+        response = self.client.post(
+            '/native-push-pretplata/',
+            data=json.dumps({'platform': 'android', 'token': 'a' * 120}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
+        self.assertTrue(NativePushDevice.objects.filter(user=self.user, platform='android', token='a' * 120).exists())
 
     def test_registration_saves_required_contact_information(self):
         response = self.client.post('/registracija/', {

@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import BrigaLoginView, accept_invite, account, android_asset_links, apple_app_site_association, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
+from users.views import BrigaLoginView, accept_invite, account, android_asset_links, apple_app_site_association, control_center, dashboard, register, senior_easy, service_worker, health, native_push_subscribe, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
 
 urlpatterns = [
     path('.well-known/assetlinks.json', android_asset_links, name='android_app_links'),
@@ -38,6 +38,7 @@ urlpatterns = [
     path('service-worker.js', service_worker, name='service-worker'),
     path('zdravlje/', health, name='zdravlje'),
     path('push-pretplata/', push_subscribe, name='push_pretplata'),
+    path('native-push-pretplata/', native_push_subscribe, name='native_push_pretplata'),
     path('sophie-govor/', sophie_speech, name='sophie_govor'),
     path('media/<path:path>', protected_media, name='zasticeni_mediji'),
 ]

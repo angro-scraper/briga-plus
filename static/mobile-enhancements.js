@@ -118,15 +118,27 @@
           pushButton.textContent = enabled ? 'Obaveštenja dozvoljena' : 'Pokušaj ponovo';
           pushButton.disabled = enabled;
         };
-        nativePush.addListener('registration', () => {
-          finish('Telefon je spreman za Briga+ obaveštenja. Isporuka SOS i podsetnika se uključuje nakon povezivanja Firebase/APNs naloga.', true);
+        nativePush.addListener('registration', async registration => {
+          try {
+            const platform = window.Capacitor.getPlatform?.() === 'ios' ? 'ios' : 'android';
+            const response = await fetch('/native-push-pretplata/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+              body: JSON.stringify({ token: registration.value, platform }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.ok) throw new Error();
+            finish('Ovaj telefon je povezan sa vašim Briga+ nalogom. Isporuka SOS i podsetnika se aktivira čim se povežu Firebase/APNs ključevi.', true);
+          } catch (_) {
+            finish('Dozvola je data, ali telefon nije sačuvan uz nalog. Pokušajte ponovo.', false);
+          }
         });
         nativePush.addListener('registrationError', () => {
           finish('Dozvola je data, ali povezivanje telefona nije uspelo. Pokušajte ponovo kasnije.', false);
         });
         await nativePush.register();
         window.setTimeout(() => {
-          finish('Dozvola je sačuvana. Za stvarnu isporuku na Android/iPhone potrebno je još povezati Firebase/APNs za Briga+.', true);
+          finish('Dozvola je data, ali povezivanje telefona još nije završeno. Pokušajte ponovo.', false);
         }, 5000);
         return;
       }

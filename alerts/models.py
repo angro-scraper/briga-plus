@@ -25,3 +25,17 @@ class PushSubscription(models.Model):
     auth = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class NativePushDevice(models.Model):
+    """Token koji izdaje Android ili iPhone za obaveštenja aplikacije."""
+
+    class Platform(models.TextChoices):
+        ANDROID = 'android', 'Android'
+        IOS = 'ios', 'iPhone / iPad'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='native_push_devices')
+    platform = models.CharField(max_length=12, choices=Platform.choices)
+    token = models.CharField(max_length=512, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
