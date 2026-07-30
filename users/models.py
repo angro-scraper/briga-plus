@@ -27,6 +27,36 @@ class UserContactProfile(models.Model):
         return f'Kontakt: {self.user}'
 
 
+class PilotFeedback(models.Model):
+    """Kratka povratna informacija pilota, vidljiva samo platformskom timu."""
+
+    class Category(models.TextChoices):
+        EASE = 'ease', 'Lakše korišćenje'
+        NOTIFICATION = 'notification', 'Obaveštenja'
+        SOS = 'sos', 'SOS i bezbednost'
+        ISSUE = 'issue', 'Problem u radu'
+        IDEA = 'idea', 'Predlog'
+
+    class Rating(models.TextChoices):
+        GOOD = 'good', 'Dobro radi'
+        OK = 'ok', 'Može bolje'
+        BAD = 'bad', 'Ne radi kako treba'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='pilot_feedback')
+    family = models.ForeignKey('families.Family', null=True, blank=True, on_delete=models.SET_NULL, related_name='pilot_feedback')
+    category = models.CharField(max_length=16, choices=Category.choices)
+    rating = models.CharField(max_length=8, choices=Rating.choices)
+    message = models.CharField(max_length=800)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.get_category_display()} · {self.user}'
+
+
 class AuditEvent(models.Model):
     """Neizmenjiv, kratak trag radnji koje utiču na bezbednost i pristup."""
 

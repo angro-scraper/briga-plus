@@ -26,4 +26,15 @@ Android se zatim otvara kroz Android Studio (`npm run android`). iOS se potpisuj
 4. Dodati jasne opise dozvola za lokaciju, mikrofon, kameru i obaveštenja; nikada ne tražiti pozadinsku lokaciju za trenutni SOS tok.
 5. Testirati TestFlight i zatvoreni Play test sa stvarnim uređajima pre javne objave.
 
+## Pametni pozivni linkovi
+
+Pozivnica ostaje jedan bezbedan HTTPS link (`https://briga-plus.onrender.com/poziv/...`). Kada je aplikacija instalirana, Android/iPhone je otvara direktno; bez aplikacije vodi na web registraciju.
+
+Pre sledećeg Android/iOS build-a u Render dodati:
+
+1. `BRIGA_ANDROID_APP_LINK_SHA256` — SHA-256 otisak sertifikata kojim je potpisan Play build. Više otisaka se razdvajaju zarezom.
+2. `BRIGA_APPLE_APP_ID` — `AppleTeamID.rs.brigaplus.app`, iz Apple Developer naloga.
+
+Nakon toga ponovo napraviti Android i iOS build, jer oba omota sadrže konfiguraciju za potvrđeni domen. Bez ova dva podatka server namerno ne objavljuje verifikacione fajlove i pozivnica ostaje web link.
+
 Ne objavljivati ovaj omot dok se ne završe stavke iz glavnog `README.md`: trajni privatni media bucket, produkcioni backup, VAPID/scheduler i pravni pregled politike privatnosti.

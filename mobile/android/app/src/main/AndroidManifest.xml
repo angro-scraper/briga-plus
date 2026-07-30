@@ -22,6 +22,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Jedan HTTPS link za pozivnicu otvara aplikaciju kada je instalirana. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="briga-plus.onrender.com" android:pathPrefix="/poziv/" />
+            </intent-filter>
+
         </activity>
 
         <provider

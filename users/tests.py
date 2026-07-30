@@ -2,12 +2,12 @@ import json
 import os
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.core.management import call_command
 from django.utils import timezone
 from django.contrib.auth.models import User
 from families.models import Membership
-from users.models import AuditEvent, PrivacyConsent, UserContactProfile
+from users.models import AuditEvent, PilotFeedback, PrivacyConsent, UserContactProfile
 from checkins.models import CheckIn
 from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
@@ -202,6 +202,30 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(sos.acknowledged_by, self.user)
         self.assertEqual(sos.responder, self.user)
         self.assertIsNotNone(sos.responder_en_route_at)
+        self.assertTrue(senior.alerts.filter(title='SOS je viđen').exists())
+        self.assertTrue(senior.alerts.filter(title='Pomoć je krenula').exists())
+
+    @override_settings(BRIGA_ANDROID_APP_LINK_SHA256='AA:BB:CC')
+    def test_android_app_link_file_is_available_after_certificate_setup(self):
+        response = self.client.get('/.well-known/assetlinks.json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]['target']['package_name'], 'rs.brigaplus.app')
+        self.assertEqual(response.json()[0]['target']['sha256_cert_fingerprints'], ['AA:BB:CC'])
+
+    @override_settings(BRIGA_APPLE_APP_ID='TEAM123.rs.brigaplus.app')
+    def test_ios_universal_link_file_is_available_after_apple_setup(self):
+        response = self.client.get('/.well-known/apple-app-site-association')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['applinks']['details'][0]['appID'], 'TEAM123.rs.brigaplus.app')
+
+    def test_pilot_feedback_is_saved_for_platform_team(self):
+        self.client.post('/', {
+            'action': 'pilot_feedback', 'category': 'ease', 'rating': 'ok',
+            'message': 'Dugme za terapiju treba da bude veće.',
+        })
+        feedback = PilotFeedback.objects.get()
+        self.assertEqual(feedback.user, self.user)
+        self.assertEqual(feedback.family, self.family)
 
     def test_support_circle_can_claim_unassigned_task(self):
         task = CareTask.objects.create(family=self.family, title='Preuzeti terapiju')

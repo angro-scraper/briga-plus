@@ -157,6 +157,10 @@ LOGOUT_REDIRECT_URL = 'prijava'
 # odmah prekida odjavom, promenom lozinke, brisanjem podataka aplikacije ili
 # deaktivacijom naloga.
 SENIOR_SESSION_AGE = int(os.environ.get('BRIGA_SENIOR_SESSION_AGE', 60 * 60 * 24 * 365))
+# Verifikacioni podaci za jedan pametan HTTPS pozivni link. Prazna vrednost
+# bezbedno ostavlja link kao web registraciju dok se prodajni sertifikat ne unese.
+BRIGA_ANDROID_APP_LINK_SHA256 = os.environ.get('BRIGA_ANDROID_APP_LINK_SHA256', '')
+BRIGA_APPLE_APP_ID = os.environ.get('BRIGA_APPLE_APP_ID', '')
 CSRF_TRUSTED_ORIGINS = [host for host in os.environ.get('BRIGA_CSRF_TRUSTED_ORIGINS', '').split(',') if host]
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

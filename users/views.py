@@ -26,7 +26,7 @@ from families.models import CareDevice, CareDocument, CareProfile, EmergencyCont
 from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
 from users.forms import BrigaRegistrationForm
-from users.models import AuditEvent, PrivacyConsent, UserContactProfile
+from users.models import AuditEvent, PilotFeedback, PrivacyConsent, UserContactProfile
 
 
 def audit(actor, event, family=None, target='', detail=None):
@@ -47,6 +47,12 @@ def notify_family(family, sender, kind, title, body='', url='/'):
     ])
     for alert in alerts:
         send_push_alert(alert)
+
+
+def notify_user(recipient, kind, title, body='', url='/'):
+    """Kratko stanje SOS odgovora vraća se osobi koja je poslala poziv."""
+    alert = Alert.objects.create(recipient=recipient, kind=kind, title=title, body=body, url=url)
+    send_push_alert(alert)
 
 
 def can_coordinate(membership):
@@ -168,6 +174,35 @@ def health(request):
         'version': '0.6.0',
         'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
         'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
+        'android_app_links_configured': bool(settings.BRIGA_ANDROID_APP_LINK_SHA256),
+        'ios_universal_links_configured': bool(settings.BRIGA_APPLE_APP_ID),
+    })
+
+
+def android_asset_links(request):
+    """Android App Links: jedna HTTPS pozivnica otvara instaliranu Briga+ aplikaciju."""
+    fingerprints = [item.strip() for item in settings.BRIGA_ANDROID_APP_LINK_SHA256.split(',') if item.strip()]
+    if not fingerprints:
+        raise Http404
+    return JsonResponse([{
+        'relation': ['delegate_permission/common.handle_all_urls'],
+        'target': {
+            'namespace': 'android_app',
+            'package_name': 'rs.brigaplus.app',
+            'sha256_cert_fingerprints': fingerprints,
+        },
+    }], safe=False)
+
+
+def apple_app_site_association(request):
+    """iOS Universal Links za pozivnice; bez App ID-a se ne objavljuje nepotvrđen zapis."""
+    if not settings.BRIGA_APPLE_APP_ID:
+        raise Http404
+    return JsonResponse({
+        'applinks': {
+            'apps': [],
+            'details': [{'appID': settings.BRIGA_APPLE_APP_ID, 'paths': ['/poziv/*']}],
+        },
     })
 
 
@@ -521,21 +556,26 @@ def dashboard(request):
                 notify_family(family, request.user, Alert.Kind.NEED_HELP, f'{request.user.username} {labels[kind]}', 'Otvorite Briga+ i javite se osobi.')
                 messages.success(request, 'Porodica je obaveštena. Ovo nije aktiviralo SOS.')
         elif action == 'sos_acknowledge' and family and can_coordinate(membership):
-            updated = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, acknowledged_at__isnull=True).update(
-                acknowledged_at=timezone.now(), acknowledged_by=request.user,
-            )
-            if updated:
-                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{request.POST.get('sos_id')}", {'state': 'acknowledged'})
+            emergency = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, acknowledged_at__isnull=True).first()
+            if emergency:
+                emergency.acknowledged_at, emergency.acknowledged_by = timezone.now(), request.user
+                emergency.save(update_fields=['acknowledged_at', 'acknowledged_by'])
+                notify_user(emergency.raised_by, Alert.Kind.SOS, 'SOS je viđen', f'{request.user.first_name or request.user.username} je video/la vaš SOS.', '/')
+                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{emergency.id}", {'state': 'acknowledged'})
         elif action == 'sos_en_route' and family and can_coordinate(membership):
-            updated = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, responder_en_route_at__isnull=True).update(
-                responder_en_route_at=timezone.now(), responder=request.user,
-            )
-            if updated:
-                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{request.POST.get('sos_id')}", {'state': 'en_route'})
+            emergency = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, responder_en_route_at__isnull=True).first()
+            if emergency:
+                emergency.responder_en_route_at, emergency.responder = timezone.now(), request.user
+                emergency.save(update_fields=['responder_en_route_at', 'responder'])
+                notify_user(emergency.raised_by, Alert.Kind.SOS, 'Pomoć je krenula', f'{request.user.first_name or request.user.username} je krenuo/la ka vama.', '/')
+                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{emergency.id}", {'state': 'en_route'})
         elif action == 'sos_resolve' and family and can_coordinate(membership):
-            updated = family.emergencies.filter(pk=request.POST.get('sos_id')).update(resolved_at=timezone.now())
-            if updated:
-                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{request.POST.get('sos_id')}", {'state': 'resolved'})
+            emergency = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True).first()
+            if emergency:
+                emergency.resolved_at = timezone.now()
+                emergency.save(update_fields=['resolved_at'])
+                notify_user(emergency.raised_by, Alert.Kind.SOS, 'Pomoć je stigla', f'{request.user.first_name or request.user.username} je označio/la da je pomoć stigla.', '/')
+                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{emergency.id}", {'state': 'resolved'})
         elif action == 'invite_create' and family and membership.role == Membership.Role.ADMIN:
             role = request.POST.get('role')
             access_level = request.POST.get('access_level', Membership.AccessLevel.BASIC)
@@ -563,6 +603,15 @@ def dashboard(request):
                 messages.success(request, f'Pristup je ažuriran za {target.user.first_name or target.user.username}.')
         elif action == 'alert_read':
             request.user.alerts.filter(pk=request.POST.get('alert_id')).update(read_at=timezone.now())
+        elif action == 'pilot_feedback':
+            category = request.POST.get('category')
+            rating = request.POST.get('rating')
+            message = request.POST.get('message', '').strip()
+            if category in PilotFeedback.Category.values and rating in PilotFeedback.Rating.values and message:
+                PilotFeedback.objects.create(user=request.user, family=family, category=category, rating=rating, message=message[:800])
+                messages.success(request, 'Hvala. Vaša povratna informacija je sačuvana za pilot tim.')
+            else:
+                messages.error(request, 'Izaberite temu, ocenu i napišite kratku poruku.')
         elif action == 'safety_settings' and family and membership.role == Membership.Role.ADMIN:
             senior = family.memberships.filter(role=Membership.Role.SENIOR).first()
             if senior:

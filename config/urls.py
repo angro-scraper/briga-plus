@@ -19,9 +19,11 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import BrigaLoginView, accept_invite, account, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
+from users.views import BrigaLoginView, accept_invite, account, android_asset_links, apple_app_site_association, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
 
 urlpatterns = [
+    path('.well-known/assetlinks.json', android_asset_links, name='android_app_links'),
+    path('.well-known/apple-app-site-association', apple_app_site_association, name='apple_universal_links'),
     path('admin/', admin.site.urls),
     path('', dashboard, name='pocetna'),
     path('jednostavno/', senior_easy, name='jednostavno'),
