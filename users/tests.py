@@ -43,6 +43,11 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertRedirects(response, '/prijava/?next=/')
 
+    def test_logout_uses_post_and_returns_to_login(self):
+        response = self.client.post('/odjava/')
+        self.assertRedirects(response, '/prijava/')
+        self.assertNotIn('_auth_user_id', self.client.session)
+
     def test_senior_cannot_create_or_complete_family_task(self):
         senior = User.objects.create_user('jelena', password='bezbedna-lozinka-123')
         Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
