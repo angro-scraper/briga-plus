@@ -1,0 +1,42 @@
+/* Svaki alat na telefonu je stvaran ceo ekran, sa sadržajem koji se skroluje. */
+@media (max-width: 640px) {
+  dialog.modal[open] {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 16px 15px max(20px, env(safe-area-inset-bottom)) !important;
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden !important;
+    overscroll-behavior: contain;
+    border: 0;
+    border-radius: 0;
+  }
+
+  dialog.modal[open] .modal-head { flex: 0 0 auto; }
+
+  dialog.modal[open] > .item-list,
+  dialog.modal[open] > .contact-list,
+  dialog.modal[open] > .notification-list,
+  dialog.modal[open] > .visit-list,
+  dialog.modal[open] > .health-list,
+  dialog.modal[open] > .messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  dialog.modal[open] .modal-form,
+  dialog.modal[open] .chat-form {
+    flex: 0 0 auto;
+    background: #f9fcfa;
+  }
+
+  dialog.modal[open].modal-chat .voice-messages { flex: 0 0 auto; max-height: 26vh; overflow-y: auto; }
+  dialog.modal[open].modal-chat .messages { margin-bottom: 8px; }
+}

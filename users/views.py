@@ -373,6 +373,9 @@ def dashboard(request):
 
     if request.method == 'POST':
         action = request.POST.get('action')
+        return_modal = request.POST.get('return_modal', '')
+        if return_modal not in {'chat', 'reminders', 'tasks', 'contacts', 'alerts', 'health', 'safety', 'week', 'family', 'routine', 'profile', 'visits', 'documents', 'mood', 'devices', 'feedback'}:
+            return_modal = ''
         if action == 'checkin' and (membership.role == Membership.Role.SENIOR or care_user == request.user):
             note = request.POST.get('note', '').strip()[:240]
             period = request.POST.get('period', CheckIn.Period.ANY)
@@ -462,12 +465,12 @@ def dashboard(request):
             body = request.POST.get('body', '').strip()
             if body:
                 Message.objects.create(family=family, sender=request.user, body=body)
-                notify_family(family, request.user, Alert.Kind.MESSAGE, f'Nova poruka od {request.user.username}', body[:180])
+                notify_family(family, request.user, Alert.Kind.MESSAGE, f'Nova poruka od {request.user.username}', body[:180], '/?open=chat')
         elif action == 'voice_message' and family:
             audio = request.FILES.get('audio')
             if audio and audio.size <= 12 * 1024 * 1024 and audio.content_type.startswith('audio/'):
                 VoiceMessage.objects.create(family=family, sender=request.user, audio=audio)
-                notify_family(family, request.user, Alert.Kind.MESSAGE, f'Glasovna poruka od {request.user.username}', 'Otvorite Briga+ i preslušajte poruku.')
+                notify_family(family, request.user, Alert.Kind.MESSAGE, f'Glasovna poruka od {request.user.username}', 'Otvorite Briga+ i preslušajte poruku.', '/?open=chat')
             else:
                 messages.error(request, 'Glasovna poruka mora biti audio zapis manji od 12 MB.')
         elif action == 'task' and family and can_coordinate(membership):
@@ -631,7 +634,7 @@ def dashboard(request):
                     senior.save(update_fields=['checkin_due_time', 'gentle_reminder_minutes', 'alert_after_minutes'])
                 except ValueError:
                     messages.error(request, 'Vreme i minuti za podsetnik nisu ispravni.')
-        return redirect('pocetna')
+        return redirect(f'/?open={return_modal}' if return_modal else 'pocetna')
 
     now = timezone.now()
     week_start, week_end = now - timedelta(days=7), now + timedelta(days=7)

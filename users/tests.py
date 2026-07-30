@@ -16,6 +16,8 @@ from emergencies.models import EmergencyAlert
 from families.models import CareDocument, CareProfile, EmergencyContact, FamilyInvite, FamilyVisit
 from checkins.models import MoodEntry
 from django.core.files.uploadedfile import SimpleUploadedFile
+from alerts.models import Alert
+from messaging.models import Message
 
 class DashboardFlowTests(TestCase):
     def setUp(self):
@@ -65,6 +67,27 @@ class DashboardFlowTests(TestCase):
         self.assertIn('no-store', response['Cache-Control'])
         self.assertContains(response, '/static/window-clarity.css?v=2')
         self.assertContains(response, '/static/ios-card-layout.css?v=1')
+
+    def test_chat_message_stays_open_and_notifies_another_family_member(self):
+        caregiver = User.objects.create_user('ana_chat', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+
+        response = self.client.post('/', {
+            'action': 'message', 'return_modal': 'chat', 'body': 'Stižem za deset minuta.',
+        })
+
+        self.assertRedirects(response, '/?open=chat')
+        self.assertTrue(Message.objects.filter(family=self.family, sender=self.user, body='Stižem za deset minuta.').exists())
+        alert = Alert.objects.get(recipient=caregiver, kind=Alert.Kind.MESSAGE)
+        self.assertEqual(alert.url, '/?open=chat')
+        response = self.client.get('/?open=chat')
+        self.assertContains(response, 'Stižem za deset minuta.')
+        self.assertContains(response, "modal.showModal()")
+
+    def test_main_application_routes_are_available_to_a_signed_in_user(self):
+        for path in ('/', '/nalog/', '/politika-privatnosti/', '/uslovi-koriscenja/', '/service-worker.js', '/zdravlje/'):
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 200)
 
     def test_registration_saves_required_contact_information(self):
         response = self.client.post('/registracija/', {

@@ -28,11 +28,12 @@
           try {
             const formData = new FormData();
             formData.append('action', 'voice_message');
+            formData.append('return_modal', 'chat');
             formData.append('audio', new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }), 'glasovna-poruka.webm');
             formData.append('csrfmiddlewaretoken', csrfToken());
             const response = await fetch('/', { method: 'POST', body: formData });
             if (!response.ok) throw new Error();
-            window.location.reload();
+            window.location.assign('/?open=chat');
           } catch (_) {
             voiceButton.disabled = false;
             voiceButton.textContent = '● Snimi glasovnu poruku';
