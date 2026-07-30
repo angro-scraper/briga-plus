@@ -1,6 +1,6 @@
-# Briga+ — paket za dizajn
+# Briga+ — redizajn 2026
 
-Ovo je postojeća funkcionalna Briga+ aplikacija. Potrebno je unaprediti vizuelni dizajn bez uklanjanja ili menjanja poslovne logike.
+Kompletan vizuelni redizajn je vraćen u aplikaciju 30.07.2026. Poslovna logika, Django rute, forme, CSRF zaštita, SOS/GPS, push i Sophie glas ostaju odvojeni od vizuelnog sloja.
 
 ## Šta je najvažnije
 
@@ -13,16 +13,16 @@ Ovo je postojeća funkcionalna Briga+ aplikacija. Potrebno je unaprediti vizueln
 - Veliki tekst, visok kontrast i veliki dodirni ciljevi su obavezni.
 - Ne menjati Django modele, rute, forme, nazive `name` polja, CSRF zaštitu ili JavaScript funkcije za SOS, GPS, push i Sophie glas.
 
-## Glavne datoteke za dizajn
+## Glavne datoteke redizajna
 
 - `templates/senior_dashboard.html`
 - `templates/dashboard.html`
 - `templates/senior_easy.html`
-- `static/react-native-design.css`
-- `static/directional-mobile-home.css`
-- `static/senior-panel.css`
-- `static/app.css`
+- `static/briga-v2.css`
+- `static/briga-v2.js`
 - `static/briga-ui-icons.svg`
+- `templates/service-worker.js`
+- `static/manifest.webmanifest`
 
 ## Lokalno pokretanje
 
@@ -40,11 +40,13 @@ Demo nalozi imaju lozinku `BrigaPlus2026!`:
 - `mama` — čuvano lice
 - `ana` — član porodice
 
-## Provera pre vraćanja paketa
+## Provera pre objave
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
-.\.venv\Scripts\python.exe manage.py test users checkins families reminders caretasks emergencies messaging alerts
+.\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
+.\.venv\Scripts\python.exe manage.py test
+node --check static\briga-v2.js
 ```
 
-Uz vraćeni ZIP priložiti slike oba mobilna početna ekrana na širini od približno 390 px.
+Automatizovani test proverava i da svaka kartica sa `data-modal` ili `data-dialog` atributom vodi ka postojećem prozoru.

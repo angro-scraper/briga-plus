@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="sr">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f6b52">
-  <link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/senior-easy.css?v=2"><link rel="stylesheet" href="/static/senior-four-actions.css?v=3"><link rel="stylesheet" href="/static/senior-design-refresh.css?v=1"><link rel="stylesheet" href="/static/directional-mobile-home.css?v=3"><link rel="stylesheet" href="/static/react-native-design.css?v=2"><title>Briga+ | Jednostavno</title>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d553d">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260730"><title>Briga+ | Jednostavno</title>
 </head>
 <body class="easy-page">
 <header class="easy-top"><a href="/" class="easy-brand"><img src="/static/briga-mark.svg" alt="Briga+">Briga<span>+</span></a><a href="/" class="easy-link">Moj panel</a></header>
@@ -20,4 +20,5 @@
   <section class="easy-section easy-contact"><h2>Porodica je tu</h2>{% if next_visit %}<p>Sledeća poseta: <b>{{ next_visit.visitor.first_name|default:next_visit.visitor.username }}</b>, {{ next_visit.scheduled_for|date:"d.m. u H:i" }}.</p>{% endif %}<div>{% for contact in contacts|slice:":2" %}<a href="tel:{{ contact.phone|urlencode }}">☎ Pozovi {{ contact.name }}</a>{% empty %}<p>Dodajte hitni kontakt u porodičnom panelu.</p>{% endfor %}</div></section>
 </main>
 <script>const f=document.querySelector('#easy-sos');if(f)f.addEventListener('submit',event=>{if(f.dataset.ready)return;event.preventDefault();const send=()=>{f.dataset.ready='1';f.submit()};if(!navigator.geolocation){send();return}navigator.geolocation.getCurrentPosition(p=>{f.latitude.value=p.coords.latitude;f.longitude.value=p.coords.longitude;send()},send,{enableHighAccuracy:true,timeout:12000,maximumAge:0})});</script>
+  <script src="/static/briga-v2.js?v=20260730"></script>
 </body></html>

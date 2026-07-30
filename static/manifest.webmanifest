@@ -6,8 +6,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f7faf8",
-  "theme_color": "#16735b",
+  "background_color": "#faf6ee",
+  "theme_color": "#0d553d",
   "icons": [
     { "src": "/static/briga-app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
     { "src": "/static/briga-app-icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }

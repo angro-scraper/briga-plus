@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -45,7 +46,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-v2")
+        self.assertContains(response, "briga-plus-redizajn-20260730")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -65,8 +66,8 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/window-clarity.css?v=2')
-        self.assertContains(response, '/static/ios-card-layout.css?v=1')
+        self.assertContains(response, '/static/briga-v2.css?v=20260730')
+        self.assertContains(response, '/static/briga-v2.js?v=20260730')
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
         caregiver = User.objects.create_user('ana_chat', password='bezbedna-lozinka-123')
@@ -88,6 +89,22 @@ class DashboardFlowTests(TestCase):
         for path in ('/', '/nalog/', '/politika-privatnosti/', '/uslovi-koriscenja/', '/service-worker.js', '/zdravlje/'):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_every_dashboard_control_opens_an_existing_dialog(self):
+        family_response = self.client.get('/')
+        family_html = family_response.content.decode()
+        family_targets = set(re.findall(r'data-modal="([^"]+)"', family_html))
+        family_dialogs = set(re.findall(r'<dialog[^>]+id="([^"]+)"', family_html))
+        self.assertFalse(family_targets - family_dialogs)
+
+        senior = User.objects.create_user('ruta_senior', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+        senior_response = self.client.get('/')
+        senior_html = senior_response.content.decode()
+        senior_targets = set(re.findall(r'data-dialog="([^"]+)"', senior_html))
+        senior_dialogs = set(re.findall(r'<dialog[^>]+id="([^"]+)"', senior_html))
+        self.assertFalse(senior_targets - senior_dialogs)
 
     def test_native_phone_token_is_saved_for_the_signed_in_user(self):
         response = self.client.post(
