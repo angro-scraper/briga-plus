@@ -1,0 +1,224 @@
+/* Jasniji prozorčići: isti ritam, dovoljno mesta za tekst i jasna akcija. */
+.tool-grid,
+.care-extension-grid {
+  align-items: stretch;
+}
+
+.tool-card,
+.care-extension-grid .tool-card,
+.device-section .tool-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tool-card > span:nth-child(2) {
+  min-width: 0;
+}
+
+.tool-card b,
+.tool-card small {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 641px) {
+  .tool-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .tool-card {
+    min-height: 138px;
+    padding: 19px;
+    grid-template-columns: 50px minmax(0, 1fr) 34px;
+    gap: 14px;
+  }
+
+  .tool-card .tool-icon,
+  .care-extension-grid .tool-icon,
+  .device-section .tool-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+  }
+
+  .tool-card b,
+  .care-extension-grid .tool-card b,
+  .device-section .tool-card b {
+    display: block;
+    font-size: 18px;
+    line-height: 1.18;
+  }
+
+  .tool-card small,
+  .care-extension-grid .tool-card small,
+  .device-section .tool-card small {
+    display: block;
+    margin-top: 5px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .tool-card i {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 50%;
+    background: #eff7f2;
+    color: var(--brand);
+    font-size: 25px;
+    font-style: normal;
+    line-height: 1;
+  }
+
+  .care-extension-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .care-extension-grid .tool-card {
+    min-height: 188px;
+    padding: 19px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px minmax(0, 1fr) 34px;
+    gap: 10px;
+  }
+
+  .care-extension-grid .tool-card > span:nth-child(2) {
+    align-self: start;
+  }
+
+  .care-extension-grid .tool-card i {
+    justify-self: stretch;
+    width: auto;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 0;
+  }
+
+  .care-extension-grid .tool-card i::after {
+    content: "Otvori";
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .device-section .tool-card {
+    width: min(100%, 320px);
+    min-height: 156px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1040px) {
+  .tool-grid,
+  .care-extension-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tool-grid,
+  .senior-account .tool-grid,
+  .care-extension-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 12px;
+  }
+
+  .tool-card,
+  .care-extension-grid .tool-card,
+  .device-section .tool-card {
+    min-height: 182px;
+    padding: 14px;
+    grid-template-rows: 46px minmax(0, 1fr) 34px;
+    gap: 8px;
+    border-radius: 18px;
+  }
+
+  .tool-card .tool-icon,
+  .care-extension-grid .tool-icon,
+  .device-section .tool-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .tool-card b,
+  .care-extension-grid .tool-card b,
+  .device-section .tool-card b {
+    display: block;
+    font-size: 15.5px;
+    line-height: 1.17;
+  }
+
+  .tool-card small,
+  .care-extension-grid .tool-card small,
+  .device-section .tool-card small {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    line-height: 1.32;
+  }
+
+  .tool-card i {
+    height: 34px;
+    min-height: 34px;
+    border-radius: 10px;
+  }
+
+  .tool-card i::after {
+    font-size: 11.5px;
+  }
+
+  .device-section .tool-card {
+    width: 100%;
+  }
+
+  .modal[open] {
+    overflow-x: hidden;
+  }
+
+  .modal .modal-head {
+    z-index: 3;
+    box-shadow: 0 7px 14px rgba(18, 71, 52, .07);
+  }
+
+  .modal .item-list > article,
+  .modal .contact-list > article,
+  .modal .notification-list > article,
+  .modal .visit-list > article,
+  .modal .health-list > article {
+    min-width: 0;
+    padding: 14px;
+    border-radius: 15px;
+  }
+
+  .modal .item-list > article > div,
+  .modal .contact-list > article > div,
+  .modal .notification-list > article > div,
+  .modal .visit-list > article > div,
+  .modal .health-list > article > div {
+    min-width: 0;
+  }
+
+  .modal .modal-form {
+    border-top: 1px solid #d6e9df;
+    background: #f9fcfa;
+    box-shadow: 0 -10px 24px rgba(18, 71, 52, .08);
+  }
+}
+
+@media (max-width: 360px) {
+  .tool-grid,
+  .senior-account .tool-grid,
+  .care-extension-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-card,
+  .care-extension-grid .tool-card,
+  .device-section .tool-card {
+    min-height: 156px;
+  }
+}
