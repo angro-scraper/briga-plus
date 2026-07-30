@@ -1,0 +1,78 @@
+/* Mobilni ekran: najvažnije radnje bez dugog listanja. */
+@media (max-width: 640px) {
+  body { background: #f4f8f5; }
+  .topbar { min-height: 62px; padding: 9px 14px; }
+  .brand { font-size: 22px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .profile .text-control:not(#senior-mode-toggle), .profile .logout { display: none; }
+  .app-shell { padding: 18px 12px 40px; }
+  .page-intro { margin-bottom: 14px; gap: 10px; }
+  .page-intro h1 { font-size: 29px; letter-spacing: -1.25px; }
+  .page-intro > div > p:not(.eyebrow), .panel-role-banner, .today-label { display: none; }
+
+  /* SOS je prvi i zauzima punu širinu ekrana. */
+  .hero-grid, .senior-account .hero-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .hero-grid .sos-card, .senior-account .hero-grid .sos-card { order: -1; grid-column: 1 / -1; min-height: 0; padding: 17px; border-radius: 20px; background: linear-gradient(135deg, #c52f39, #9c202a); border: 0; box-shadow: 0 13px 27px rgba(161, 37, 47, .28); color: #fff; }
+  .sos-card .section-kicker, .sos-card h2, .sos-card p { color: #fff; }
+  .sos-card .sos-kicker { color: #ffe6e5; }
+  .sos-card .danger-icon { background: rgba(255,255,255,.2); color: #fff; }
+  .sos-card h2 { margin: 9px 0 2px; font-size: 22px; }
+  .sos-card form { margin-top: 12px; }
+  .sos-card input { display: none; }
+  .sos-button { min-height: 62px; border: 2px solid rgba(255,255,255,.55); border-radius: 15px; background: #fff; color: #9d2029; font-size: 16px; box-shadow: none; }
+  .sos-status { color: #ffe8e7 !important; }
+
+  .checkin-card, .next-card { min-height: 150px; padding: 15px 13px; border-radius: 18px; box-shadow: 0 7px 18px rgba(21,55,44,.06); }
+  .checkin-card .section-kicker, .next-card .section-kicker { font-size: 8px; letter-spacing: .7px; }
+  .checkin-card .kicker-icon, .next-card .kicker-icon { width: 25px; height: 25px; border-radius: 8px; font-size: 13px; }
+  .hero-grid h2 { margin: 9px 0 3px; font-size: 16px; letter-spacing: -.25px; }
+  .hero-grid p { font-size: 12px; line-height: 1.35; }
+  .supporting { min-height: 0; }
+  .time-large { margin: 9px 0 3px !important; font-size: 28px !important; letter-spacing: -1px; }
+  .checkin-form input { display: none; }
+  .checkin-form .button, .inline-action { font-size: 12px; padding-top: 8px; }
+
+  .daily-routine-panel, .senior-quick-actions { margin-top: 12px; padding: 15px; border-radius: 18px; }
+  .routine-heading h2, .senior-quick-actions h2 { font-size: 19px; }
+  .routine-heading p:not(.eyebrow), .senior-quick-actions > div > p:not(.eyebrow) { display: none; }
+  .routine-list { grid-template-columns: 1fr; gap: 7px; margin-top: 11px; }
+  .routine-item { padding: 10px; }
+  .routine-shortcuts { display: none; }
+
+  .tools-head { margin: 24px 2px 10px; }
+  .tools-head h2 { font-size: 21px; }
+  .tools-head > p { display: none; }
+  .tool-grid, .senior-account .tool-grid, .care-extension-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tool-card, .care-extension-grid .tool-card, .device-section .tool-card { width: auto; min-height: 124px; padding: 13px 11px; border-radius: 17px; grid-template-columns: 1fr; align-content: start; gap: 8px; }
+  .tool-card::before { width: 3px; }
+  .tool-card::after { width: 54px; height: 54px; }
+  .tool-card .tool-icon, .care-extension-grid .tool-icon, .device-section .tool-icon { width: 42px; height: 42px; border-radius: 13px; }
+  .tool-card .tool-icon svg, .care-extension-grid .tool-icon svg, .device-section .tool-icon svg { width: 22px; height: 22px; }
+  .tool-card b, .care-extension-grid .tool-card b, .device-section .tool-card b { font-size: 14px; line-height: 1.13; }
+  .tool-card small, .care-extension-grid .tool-card small, .device-section .tool-card small { margin-top: 3px; font-size: 10.5px; line-height: 1.3; }
+  .tool-card i { display: none; }
+  .extension-title { margin: 23px 2px 0; font-size: 19px; }
+  .device-section { margin-top: 17px; }
+  .device-section .eyebrow { margin-left: 2px; }
+  .easy-mode-link { padding: 12px; font-size: 13px; }
+
+  /* Svaki alat se na telefonu otvara kao cel ekran sa jasnim povratkom. */
+  .modal { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 16px 15px 32px; border: 0; border-radius: 0; background: #f9fcfa; }
+  .modal::backdrop { background: #f9fcfa; }
+  .modal-head { position: sticky; top: -16px; z-index: 2; align-items: center; margin: -16px -15px 12px; padding: 13px 15px; background: rgba(249,252,250,.96); border-bottom: 1px solid #dceae4; backdrop-filter: blur(10px); }
+  .modal-head h2 { font-size: 20px; }
+  .modal-head .tool-icon { width: 35px; height: 35px; }
+  .modal-close { order: -1; width: auto; height: 38px; padding: 0 11px; border-radius: 11px; color: var(--brand); font-size: 0; font-weight: 850; }
+  .modal-close::after { content: "← Nazad"; font-size: 14px; }
+  .modal-lead { font-size: 14px; }
+  .modal .button, .modal .text-control { min-height: 44px; }
+  .modal-form { padding-bottom: 25px; }
+  .form-columns, .week-grid, .mood-choice { grid-template-columns: 1fr; }
+  .chat-form { position: sticky; bottom: -32px; margin: 12px -15px -32px; padding: 10px 15px; background: #f9fcfa; }
+  .messages { max-height: none; min-height: 250px; }
+}
+
+@media (max-width: 360px) {
+  .hero-grid, .senior-account .hero-grid, .tool-grid, .senior-account .tool-grid, .care-extension-grid { grid-template-columns: 1fr; }
+  .checkin-card, .next-card { min-height: 0; }
+}
