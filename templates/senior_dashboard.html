@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="/static/senior-panel.css?v=2">
   <link rel="stylesheet" href="/static/senior-guidance.css?v=1">
   <link rel="stylesheet" href="/static/senior-design-refresh.css?v=1">
-  <link rel="stylesheet" href="/static/directional-mobile-home.css?v=2">
+  <link rel="stylesheet" href="/static/directional-mobile-home.css?v=3">
+  <link rel="stylesheet" href="/static/react-native-design.css?v=1">
   <title>Briga+ | Moj dan</title>
 </head>
 <body class="senior-panel-page">
@@ -20,12 +21,12 @@
   <main class="senior-shell">
     {% for message in messages %}<div class="senior-flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
     <section class="senior-picture-home" aria-label="Moj dan">
-      <form class="picture-sos" id="picture-sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><button type="submit"><span>☎</span><div><b>SOS</b><small>Hitna pomoć</small></div></button></form>
-      <article class="picture-greeting"><span>☀</span><div><b>Dobro jutro, {{ user.first_name|default:user.username }}!</b><p>Tu smo uz vas, svaki dan.</p></div><i>♥</i></article>
-      <form method="post" class="picture-card good">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button><span>♥</span><div><b>Dobro sam</b><small>Prijavi kako se osećaš</small></div><i>›</i></button></form>
-      <form method="post" class="picture-card medicine">{% csrf_token %}{% if next_reminder %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ next_reminder.id }}">{% endif %}<button type="{% if next_reminder %}submit{% else %}button{% endif %}"{% if not next_reminder %} data-dialog="health"{% endif %}><span>◒</span><div><b>{% if next_reminder %}{{ next_reminder.title }}{% else %}Moja terapija{% endif %}</b><small>{% if next_reminder %}{{ next_reminder.scheduled_for|date:"H:i" }} · pritisni kad uradiš{% else %}Podsetnik za lekove{% endif %}</small></div><i>›</i></button></form>
-      <a class="picture-card call" href="{% if contacts %}tel:{{ contacts.0.phone|urlencode }}{% else %}#help{% endif %}"><span>☎</span><div><b>Pozovi porodicu</b><small>{% if contacts %}{{ contacts.0.name }} · brzo i lako{% else %}Porodica je tu{% endif %}</small></div><i>›</i></a>
-      <button class="picture-card diary" type="button" data-dialog="health"><span>▤</span><div><b>Moj dnevnik zdravlja</b><small>Beleške, dokumenta i simptomi</small></div><i>›</i></button>
+      <div class="picture-top"><form class="picture-sos" id="picture-sos" method="post">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><button type="submit"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><div><b>SOS</b><small>Hitna pomoć</small></div></button></form><button id="picture-text-toggle" class="picture-text-toggle" type="button" aria-label="Uvećaj tekst">A+</button></div>
+      <article class="picture-greeting"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#sun"></use></svg></span><div><b>Dobro jutro, {{ user.first_name|default:user.username }}!</b><p>Tu smo uz vas, svaki dan.</p></div><i><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#heart"></use></svg></i></article>
+      <form method="post" class="picture-card good">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button><span><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#heart"></use></svg></span><div><b>Dobro sam</b><small>Prijavi kako se osećaš</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></form>
+      <form method="post" class="picture-card medicine" id="picture-therapy">{% csrf_token %}{% if next_reminder %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ next_reminder.id }}">{% endif %}<button type="{% if next_reminder %}submit{% else %}button{% endif %}"{% if not next_reminder %} data-dialog="health"{% endif %}><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><div><b>{% if next_reminder %}{{ next_reminder.title }}{% else %}Moja terapija{% endif %}</b><small>{% if next_reminder %}{{ next_reminder.scheduled_for|date:"H:i" }} · pritisni kad uradiš{% else %}Podsetnik za lekove{% endif %}</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></form>
+      <a class="picture-card call" id="picture-family" href="{% if contacts %}tel:{{ contacts.0.phone|urlencode }}{% else %}#help{% endif %}"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><div><b>Pozovi porodicu</b><small>{% if contacts %}{{ contacts.0.name }} · brzo i lako{% else %}Porodica je tu{% endif %}</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></a>
+      <button class="picture-card diary" type="button" data-dialog="health"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg></span><div><b>Moj dnevnik zdravlja</b><small>Beleške, dokumenta i simptomi</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button><p class="picture-privacy"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#shield"></use></svg> Vaši podaci su zaštićeni i dele se samo sa porodicom.</p><nav class="picture-bottom-nav"><a href="#picture-sos"><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#home"></use></svg><span>Početna</span></a><a href="#picture-therapy"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg><span>Terapija</span></a><a href="#picture-family"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#users"></use></svg><span>Porodica</span></a><button type="button" data-dialog="health"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg><span>Dnevnik</span></button></nav>
     </section>
     <section class="senior-welcome"><p>MOJ DAN</p><h1>Zdravo, {{ user.first_name|default:user.username }}.</h1><span>{% now "l, d. F" %}</span></section>
 
@@ -75,5 +76,6 @@
   </script>
   <script src="/static/mobile-enhancements.js"></script>
   <script src="/static/senior-guidance.js?v=1"></script>
+  <script src="/static/react-native-design.js?v=1"></script>
 </body>
 </html>
