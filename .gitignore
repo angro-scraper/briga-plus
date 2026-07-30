@@ -7,3 +7,5 @@ staticfiles/
 media/
 *.pem
 .env
+*.jks
+outputs/
