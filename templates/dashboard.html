@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/static/family-panel-refresh.css?v=2">
   <link rel="stylesheet" href="/static/mobile-redesign.css?v=1">
   <link rel="stylesheet" href="/static/directional-mobile-home.css?v=3">
-  <link rel="stylesheet" href="/static/react-native-design.css?v=1">
+  <link rel="stylesheet" href="/static/react-native-design.css?v=2">
   <title>Briga+ | Porodični panel</title>
 </head>
 <body class="{% if membership.role == 'senior' %}senior-account{% elif not has_health_access %}basic-family-account{% endif %}">
@@ -159,7 +159,7 @@ const readHealth=document.querySelector('#read-health'); let healthSpeechActive=
 </script>
 <script src="/static/mobile-enhancements.js"></script>
 <script src="/static/deep-links.js"></script>
-<script src="/static/react-native-design.js?v=1"></script>
+<script src="/static/react-native-design.js?v=2"></script>
 <script>
   (() => {
     const modalName = new URLSearchParams(window.location.search).get('open');

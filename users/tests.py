@@ -334,6 +334,10 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertContains(response, 'MOJ DAN')
         self.assertContains(response, 'SOS — POZOVI POMOĆ')
+        self.assertContains(response, 'id="therapy"')
+        self.assertContains(response, 'data-dialog="therapy"')
+        self.assertContains(response, 'id="family-senior"')
+        self.assertContains(response, 'data-dialog="family-senior"')
 
     def test_cared_person_can_add_pdf_to_personal_health_diary(self):
         senior = User.objects.create_user('gordana_panel', password='bezbedna-lozinka-123')
