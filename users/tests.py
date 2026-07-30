@@ -44,6 +44,7 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
         self.assertContains(response, "briga-plus-v2")
+        self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
         response = self.client.post(
