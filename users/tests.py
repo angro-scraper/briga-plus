@@ -6,6 +6,7 @@ from django.core.management import call_command
 from django.utils import timezone
 from django.contrib.auth.models import User
 from families.models import Membership
+from users.models import AuditEvent, PrivacyConsent
 from checkins.models import CheckIn
 from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
@@ -182,6 +183,8 @@ class DashboardFlowTests(TestCase):
         upload = SimpleUploadedFile('nalaz.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         self.client.post('/', {'action': 'document', 'title': 'Nalaz', 'category': 'report', 'document': upload})
         document = CareDocument.objects.get(user=senior)
+        dashboard = self.client.get('/')
+        self.assertContains(dashboard, f'/media/{document.document.name}')
         response = self.client.get(document.document.url)
         self.assertEqual(response.status_code, 200)
         stranger = User.objects.create_user('stranac', password='bezbedna-lozinka-123')
@@ -210,12 +213,14 @@ class DashboardFlowTests(TestCase):
             'username': 'pozvana_jelena',
             'password1': 'bezbedna-lozinka-123',
             'password2': 'bezbedna-lozinka-123',
+            'privacy_consent': 'on',
         })
         self.assertRedirects(response, '/')
         joined = User.objects.get(username='pozvana_jelena')
         self.assertTrue(Membership.objects.filter(family=self.family, user=joined, role=Membership.Role.SENIOR).exists())
         invite.refresh_from_db()
         self.assertEqual(invite.accepted_by, joined)
+        self.assertTrue(PrivacyConsent.objects.filter(user=joined).exists())
         self.client.logout()
         self.assertEqual(self.client.get(invite.get_absolute_url()).status_code, 404)
 
@@ -232,6 +237,19 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         member.refresh_from_db()
         self.assertEqual(member.access_level, Membership.AccessLevel.FULL)
+        self.assertTrue(AuditEvent.objects.filter(event=AuditEvent.Event.ACCESS_CHANGED, actor=self.user).exists())
+
+    def test_user_can_accept_privacy_policy_and_view_legal_pages(self):
+        self.assertEqual(self.client.get('/politika-privatnosti/').status_code, 200)
+        self.assertEqual(self.client.get('/uslovi-koriscenja/').status_code, 200)
+        response = self.client.post('/nalog/', {'action': 'accept_privacy'})
+        self.assertRedirects(response, '/nalog/')
+        self.assertTrue(PrivacyConsent.objects.filter(user=self.user).exists())
+
+    def test_account_deletion_requires_explicit_confirmation(self):
+        response = self.client.post('/nalog/', {'action': 'delete_account', 'confirmation': 'ne'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(User.objects.filter(pk=self.user.pk).exists())
 
     def test_platform_control_center_is_staff_only(self):
         response = self.client.get('/kontrola/')

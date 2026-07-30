@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import accept_invite, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, push_subscribe
+from users.views import accept_invite, account, control_center, dashboard, register, senior_easy, service_worker, health, protected_media, privacy_policy, push_subscribe, terms
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +30,9 @@ urlpatterns = [
     path('registracija/', register, name='registracija'),
     path('poziv/<uuid:token>/', accept_invite, name='poziv'),
     path('kontrola/', control_center, name='kontrola'),
+    path('nalog/', account, name='nalog'),
+    path('politika-privatnosti/', privacy_policy, name='politika_privatnosti'),
+    path('uslovi-koriscenja/', terms, name='uslovi_koriscenja'),
     path('service-worker.js', service_worker, name='service-worker'),
     path('zdravlje/', health, name='zdravlje'),
     path('push-pretplata/', push_subscribe, name='push_pretplata'),

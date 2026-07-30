@@ -1,0 +1,24 @@
+{
+  "name": "briga-plus-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Odvojeni Android/iOS omot za Briga+",
+  "scripts": {
+    "sync": "npx cap sync",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.2"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/geolocation": "^8.2.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.4.2",
+    "@capacitor/local-notifications": "^8.2.1",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.2"
+  }
+}

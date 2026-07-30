@@ -1,0 +1,16 @@
+{
+  "appId": "rs.brigaplus.app",
+  "appName": "Briga+",
+  "webDir": "web",
+  "server": {
+    "url": "https://briga-plus.onrender.com",
+    "cleartext": false,
+    "allowNavigation": ["briga-plus.onrender.com"]
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

@@ -129,6 +129,22 @@ STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }
+# Produkcioni prilozi (nalazi, fotografije i glasovne poruke) ne smeju ostati na
+# privremenom Render fajl-sistemu. R2, S3 ili drugi S3-kompatibilan privatni bucket
+# se uključuje ovim promenljivama; lokalni razvoj ostaje bez dodatnog podešavanja.
+BRIGA_STORAGE_BUCKET = os.environ.get('BRIGA_STORAGE_BUCKET', '')
+BRIGA_DURABLE_MEDIA_CONFIGURED = bool(BRIGA_STORAGE_BUCKET)
+if BRIGA_DURABLE_MEDIA_CONFIGURED:
+    AWS_ACCESS_KEY_ID = os.environ.get('BRIGA_STORAGE_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('BRIGA_STORAGE_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = BRIGA_STORAGE_BUCKET
+    AWS_S3_ENDPOINT_URL = os.environ.get('BRIGA_STORAGE_ENDPOINT_URL', '') or None
+    AWS_S3_REGION_NAME = os.environ.get('BRIGA_STORAGE_REGION', 'auto')
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = True
+    AWS_QUERYSTRING_EXPIRE = 300
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3.S3Storage'}
 VAPID_PUBLIC_KEY = os.environ.get('BRIGA_VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.environ.get('BRIGA_VAPID_PRIVATE_KEY', '')
 VAPID_SUBJECT = os.environ.get('BRIGA_VAPID_SUBJECT', 'mailto:podrska@briga-plus.rs')

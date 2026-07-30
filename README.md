@@ -35,7 +35,7 @@ Pre objavljivanja kopirati `.env.example` u `.env`, upisati pravi tajni ključ i
 - režim za starije: veće komande i manje opcija;
 - web-push pretplate i slanje za SOS, poruke, potvrde, terapije i propušten „Dobro sam”.
 
-Pre rada sa stvarnim porodičnim podacima potrebno je povezati e-mail/SMS provajdera po izboru, PostgreSQL, HTTPS, dodatne provere članstva za svaki API tok i politiku privatnosti.
+Pre rada sa stvarnim porodičnim podacima potrebno je povezati e-mail/SMS provajdera po izboru, produkcioni PostgreSQL sa backupom, HTTPS i trajno privatno skladište priloga. Politika privatnosti i Uslovi korišćenja sada postoje u aplikaciji, ali ih pre javnog puštanja mora pregledati pravnik i dopuniti punim podacima operatera.
 
 ## Push obaveštenja na Renderu
 
@@ -49,10 +49,22 @@ BRIGA_VAPID_SUBJECT=mailto:podrska@briga-plus.rs
 
 Nakon ponovnog pokretanja, korisnik u prozoru „Obaveštenja” bira „Uključi obaveštenja na ovom uređaju”. SOS i poruke šalju push odmah; za dospele terapije i izostalu potvrdu potrebno je periodično pokretanje komande ispod, na primer Render Cron servisom na svakih 10 minuta.
 
-Za internu proveru dospelih podsetnika i izostalih dnevnih potvrda (kasnije se poziva periodično kroz Celery/cron):
+Za internu proveru dospelih podsetnika i izostalih dnevnih potvrda:
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py create_due_alerts
 ```
 
-Fotografije pakovanja i glasovne poruke su dostupne samo prijavljenim članovima iste porodice. Trenutni Render disk je privremen; pre rada sa stvarnim porodičnim podacima treba povezati trajno, šifrovano skladište fajlova (na primer S3-kompatibilan servis) i objaviti politiku privatnosti.
+Fotografije pakovanja, dokumenti i glasovne poruke su dostupni samo prijavljenim članovima iste porodice kroz zaštićeni URL aplikacije. Render disk je privremen: za produkciju postavite privatni S3/R2 bucket preko promenljivih `BRIGA_STORAGE_*` iz `.env.example`. Kada je bucket povezan, `/zdravlje/` vraća `durable_media_configured: true`.
+
+## Render raspored i važan trošak
+
+`render.yaml` sada definiše poseban cron servis `briga-plus-obavestenja` koji proverava terapije i „Dobro sam” na svakih pet minuta. Render cron nema besplatan plan i koristi `starter` plan; aktivirajte Blueprint tek kada odobrite taj mesečni trošak. Pre javne objave prebacite i PostgreSQL sa besplatnog plana na produkcioni plan sa backupom.
+
+## Lista pre javne objave
+
+1. U Renderu postaviti VAPID ključeve na web servisu i cron servisu, zatim testirati push na Androidu i iPhone-u.
+2. Kreirati privatni R2/S3 bucket i uneti `BRIGA_STORAGE_*` promenljive.
+3. Zameniti privremenu `podrska@briga-plus.rs` stvarnim kontaktom i dopuniti Politiku privatnosti poslovnim podacima posle pravnog pregleda.
+4. Promeniti početnu lozinku vlasničkog naloga i uključiti višefaktorsku zaštitu na Render, GitHub, Apple i Google nalozima.
+5. Proći zatvoreni pilot: pozivnica, nivo pristupa, SOS sa i bez GPS-a, terapija, odbijena dozvola, brisanje naloga i vraćanje iz backup-a.

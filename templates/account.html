@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="sr-Latn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f6b52"><link rel="stylesheet" href="/static/app.css"><link rel="stylesheet" href="/static/compliance.css"><title>Moj nalog | Briga+</title></head>
+<body class="legal-page"><main class="legal-shell account-shell">
+  <a class="brand legal-brand" href="/"><span class="brand-mark"><img src="/static/briga-mark.svg" alt=""></span><span class="brand-word">Briga<span class="brand-plus">+</span></span></a>
+  {% for message in messages %}<div class="flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+  <p class="eyebrow">PODEŠAVANJA NALOGA</p><h1>Privatnost i podaci</h1>
+  <section><h2>Politika privatnosti</h2><p>{% if consent and consent.policy_version == policy_version %}Prihvatili ste aktuelnu politiku {{ consent.accepted_at|date:"d.m.Y. H:i" }}.{% else %}Politika je ažurirana i čeka vašu potvrdu.{% endif %}</p><p><a href="/politika-privatnosti/" target="_blank" rel="noopener">Otvori Politiku privatnosti</a> · <a href="/uslovi-koriscenja/" target="_blank" rel="noopener">Otvori Uslove korišćenja</a></p>{% if not consent or consent.policy_version != policy_version %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="accept_privacy"><button class="button primary">Pročitao/la sam i prihvatam</button></form>{% endif %}</section>
+  <section><h2>Obaveštenja</h2><p>Na ovom nalogu postoje {{ push_subscriptions }} povezana uređaja za push obaveštenja. Uključivanje i isključivanje radi se u prozoru „Obaveštenja” na svakom uređaju posebno.</p></section>
+  <section class="danger-zone"><h2>Brisanje naloga</h2><p>Ova radnja trajno uklanja vaš nalog i podatke koji pripadaju nalogu. Ako ste jedini administrator porodice, prvo prenesite upravljanje drugom članu porodice.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_account"><label>Za potvrdu upišite <strong>OBRIŠI</strong><input name="confirmation" autocomplete="off" required></label><button class="button danger" type="submit">Trajno obriši moj nalog</button></form></section>
+  <p class="legal-links"><a href="/">Nazad na panel</a> · <a href="/odjava/">Odjava</a></p>
+</main></body></html>

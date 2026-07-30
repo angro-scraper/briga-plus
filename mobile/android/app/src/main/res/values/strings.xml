@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Briga+</string>
+    <string name="title_activity_main">Briga+</string>
+    <string name="package_name">rs.brigaplus.app</string>
+    <string name="custom_url_scheme">rs.brigaplus.app</string>
+</resources>

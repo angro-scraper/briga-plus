@@ -3,11 +3,11 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -21,6 +21,19 @@ from emergencies.models import EmergencyAlert
 from families.models import CareDevice, CareDocument, CareProfile, EmergencyContact, Family, FamilyInvite, FamilyVisit, Membership
 from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
+from users.forms import BrigaRegistrationForm
+from users.models import AuditEvent, PrivacyConsent
+
+
+def audit(actor, event, family=None, target='', detail=None):
+    """Zadržava samo podatke potrebne za bezbednosni trag, bez zdravstvenog sadržaja."""
+    AuditEvent.objects.create(
+        actor=actor,
+        family_id=family.id if family else None,
+        event=event,
+        target=str(target)[:160],
+        detail=detail or {},
+    )
 
 
 def notify_family(family, sender, kind, title, body='', url='/'):
@@ -54,15 +67,17 @@ def can_support_family(membership):
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = BrigaRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
             family = Family.objects.create(name=f'Porodica {user.username}')
             Membership.objects.create(user=user, family=family, role=Membership.Role.ADMIN)
+            PrivacyConsent.objects.create(user=user)
+            audit(user, AuditEvent.Event.CONSENT, family, 'Registracija', {'policy_version': PrivacyConsent.POLICY_VERSION})
             login(request, user)
             return redirect('pocetna')
     else:
-        form = UserCreationForm()
+        form = BrigaRegistrationForm()
     return render(request, 'registration/register.html', {'form': form})
 
 
@@ -87,10 +102,12 @@ def accept_invite(request, token):
         return redirect('pocetna')
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = BrigaRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
             Membership.objects.create(family=invite.family, user=user, role=invite.role, access_level=invite.access_level)
+            PrivacyConsent.objects.create(user=user)
+            audit(user, AuditEvent.Event.CONSENT, invite.family, 'Pozivnica', {'policy_version': PrivacyConsent.POLICY_VERSION})
             invite.accepted_at = timezone.now()
             invite.accepted_by = user
             invite.save(update_fields=['accepted_at', 'accepted_by'])
@@ -98,7 +115,7 @@ def accept_invite(request, token):
             messages.success(request, 'Nalog je napravljen i sada ste u porodičnom krugu.')
             return redirect('pocetna')
     else:
-        form = UserCreationForm()
+        form = BrigaRegistrationForm()
     return render(request, 'registration/invite_register.html', {'form': form, 'invite': invite})
 
 
@@ -107,7 +124,51 @@ def service_worker(request):
 
 
 def health(request):
-    return JsonResponse({'status': 'ok', 'application': 'Briga+', 'version': '0.5.0'})
+    return JsonResponse({
+        'status': 'ok',
+        'application': 'Briga+',
+        'version': '0.6.0',
+        'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
+        'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
+    })
+
+
+def privacy_policy(request):
+    return render(request, 'privacy_policy.html', {'policy_version': PrivacyConsent.POLICY_VERSION})
+
+
+def terms(request):
+    return render(request, 'terms.html')
+
+
+@login_required
+def account(request):
+    consent = PrivacyConsent.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'accept_privacy':
+            PrivacyConsent.objects.update_or_create(
+                user=request.user,
+                defaults={'policy_version': PrivacyConsent.POLICY_VERSION},
+            )
+            audit(request.user, AuditEvent.Event.CONSENT, target='Nalog', detail={'policy_version': PrivacyConsent.POLICY_VERSION})
+            messages.success(request, 'Saglasnost je sačuvana.')
+            return redirect('nalog')
+        if action == 'delete_account':
+            if request.POST.get('confirmation', '').strip().upper() != 'OBRIŠI':
+                messages.error(request, 'Za brisanje upišite tačno: OBRIŠI.')
+            else:
+                username = request.user.username
+                audit(request.user, AuditEvent.Event.ACCOUNT_DELETED, target=username)
+                logout(request)
+                User.objects.filter(username=username).delete()
+                messages.success(request, 'Nalog i podaci vezani za nalog su poslati na brisanje.')
+                return redirect('prijava')
+    return render(request, 'account.html', {
+        'consent': consent,
+        'policy_version': PrivacyConsent.POLICY_VERSION,
+        'push_subscriptions': request.user.push_subscriptions.count(),
+    })
 
 
 @staff_member_required(login_url='prijava')
@@ -117,6 +178,7 @@ def control_center(request):
             pk=request.POST.get('emergency_id'), resolved_at__isnull=True,
         ).update(resolved_at=timezone.now())
         if resolved:
+            audit(request.user, AuditEvent.Event.PLATFORM_EMERGENCY, target=f"SOS #{request.POST.get('emergency_id')}")
             messages.success(request, 'Hitni slučaj je označen kao rešen u platformskom centru.')
 
     now = timezone.now()
@@ -156,7 +218,7 @@ def protected_media(request, path):
     if not allowed:
         raise Http404
     try:
-        return FileResponse(open(settings.MEDIA_ROOT / path, 'rb'), as_attachment=bool(document))
+        return FileResponse(default_storage.open(path, 'rb'), as_attachment=bool(document))
     except OSError as error:
         raise Http404 from error
 
@@ -362,10 +424,11 @@ def dashboard(request):
         elif action == 'contact_delete' and family and can_coordinate(membership):
             family.emergency_contacts.filter(pk=request.POST.get('contact_id')).delete()
         elif action == 'sos' and family:
-            EmergencyAlert.objects.create(
+            emergency = EmergencyAlert.objects.create(
                 family=family, raised_by=request.user, latitude=request.POST.get('latitude') or None,
                 longitude=request.POST.get('longitude') or None, note=request.POST.get('note', '').strip()[:280], kind=EmergencyAlert.Kind.SOS,
             )
+            audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {'has_location': bool(emergency.latitude)})
             notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
             messages.error(request, 'SOS je poslat članovima porodice.')
         elif action == 'help_request' and family:
@@ -381,15 +444,21 @@ def dashboard(request):
                 notify_family(family, request.user, Alert.Kind.NEED_HELP, f'{request.user.username} {labels[kind]}', 'Otvorite Briga+ i javite se osobi.')
                 messages.success(request, 'Porodica je obaveštena. Ovo nije aktiviralo SOS.')
         elif action == 'sos_acknowledge' and family and can_coordinate(membership):
-            family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, acknowledged_at__isnull=True).update(
+            updated = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, acknowledged_at__isnull=True).update(
                 acknowledged_at=timezone.now(), acknowledged_by=request.user,
             )
+            if updated:
+                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{request.POST.get('sos_id')}", {'state': 'acknowledged'})
         elif action == 'sos_en_route' and family and can_coordinate(membership):
-            family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, responder_en_route_at__isnull=True).update(
+            updated = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True, responder_en_route_at__isnull=True).update(
                 responder_en_route_at=timezone.now(), responder=request.user,
             )
+            if updated:
+                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{request.POST.get('sos_id')}", {'state': 'en_route'})
         elif action == 'sos_resolve' and family and can_coordinate(membership):
-            family.emergencies.filter(pk=request.POST.get('sos_id')).update(resolved_at=timezone.now())
+            updated = family.emergencies.filter(pk=request.POST.get('sos_id')).update(resolved_at=timezone.now())
+            if updated:
+                audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{request.POST.get('sos_id')}", {'state': 'resolved'})
         elif action == 'invite_create' and family and membership.role == Membership.Role.ADMIN:
             role = request.POST.get('role')
             access_level = request.POST.get('access_level', Membership.AccessLevel.BASIC)
@@ -400,11 +469,12 @@ def dashboard(request):
             else:
                 if role == Membership.Role.SENIOR:
                     access_level = Membership.AccessLevel.BASIC
-                FamilyInvite.objects.create(
+                invite = FamilyInvite.objects.create(
                     family=family, created_by=request.user,
                     recipient_label=request.POST.get('recipient_label', '').strip()[:120],
                     role=role, access_level=access_level,
                 )
+                audit(request.user, AuditEvent.Event.INVITE_CREATED, family, f'Pozivnica #{invite.id}', {'role': role, 'access': access_level})
                 messages.success(request, 'Pozivnica je napravljena. Kopirajte bezbedan link iz kartice Porodica.')
         elif action == 'member_access' and family and membership.role == Membership.Role.ADMIN:
             target = family.memberships.filter(pk=request.POST.get('membership_id'), role=Membership.Role.CAREGIVER).first()
@@ -412,6 +482,7 @@ def dashboard(request):
             if target and access_level in Membership.AccessLevel.values:
                 target.access_level = access_level
                 target.save(update_fields=['access_level'])
+                audit(request.user, AuditEvent.Event.ACCESS_CHANGED, family, target.user.username, {'access': access_level})
                 messages.success(request, f'Pristup je ažuriran za {target.user.first_name or target.user.username}.')
         elif action == 'alert_read':
             request.user.alerts.filter(pk=request.POST.get('alert_id')).update(read_at=timezone.now())
@@ -481,6 +552,7 @@ def dashboard(request):
         'has_health_access': health_access, 'can_manage_care': can_coordinate(membership),
         'is_family_panel': membership.role != Membership.Role.SENIOR,
         'family_invites': family_invites,
+        'privacy_current': PrivacyConsent.objects.filter(user=request.user, policy_version=PrivacyConsent.POLICY_VERSION).exists(),
     })
 
 
