@@ -138,7 +138,11 @@
         });
         await nativePush.register();
         window.setTimeout(() => {
-          finish('Dozvola je data, ali povezivanje telefona još nije završeno. Pokušajte ponovo.', false);
+          if (!resultShown) {
+            pushStatus.textContent = 'Dozvola je data, ali povezivanje telefona još nije završeno. Pokušajte ponovo.';
+            pushButton.textContent = 'Pokušaj ponovo';
+            pushButton.disabled = false;
+          }
         }, 5000);
         return;
       }
