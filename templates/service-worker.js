@@ -1,4 +1,4 @@
-const CACHE = 'briga-plus-notification-logo-20260810';
+const CACHE = 'briga-plus-notification-logo-20260811';
 const OFFLINE = [
   '/static/briga-v2.css?v=20260808',
   '/static/briga-v2.js?v=20260803',
@@ -7,8 +7,8 @@ const OFFLINE = [
   '/static/chat-live.js?v=20260807',
   '/static/briga-mark.svg',
   '/static/briga-ui-icons.svg',
-  '/static/briga-notification-icon-512.png?v=20260810',
-  '/static/briga-notification-badge-96.png?v=20260810',
+  '/static/briga-notification-icon-512.png?v=20260811',
+  '/static/briga-notification-badge-96.png?v=20260811',
   '/static/manifest.webmanifest',
 ];
 
@@ -36,8 +36,8 @@ self.addEventListener('push', event => {
   const payload = event.data ? event.data.json() : {};
   event.waitUntil(self.registration.showNotification(payload.title || 'Briga+', {
     body: payload.body || 'Imate novo obaveštenje.',
-    icon: '/static/briga-notification-icon-512.png?v=20260810',
-    badge: '/static/briga-notification-badge-96.png?v=20260810',
+    icon: '/static/briga-notification-icon-512.png?v=20260811',
+    badge: '/static/briga-notification-badge-96.png?v=20260811',
     data: { url: payload.url || '/' },
   }));
 });

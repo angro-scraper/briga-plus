@@ -5,12 +5,13 @@
       <stop stop-color="#F0444D"/>
       <stop offset="1" stop-color="#D8192E"/>
     </linearGradient>
-    <linearGradient id="plus" x1="300" y1="250" x2="368" y2="326" gradientUnits="userSpaceOnUse">
+    <linearGradient id="plus" x1="275" y1="233" x2="369" y2="327" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFC43D"/>
       <stop offset="1" stop-color="#F39A00"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="108" fill="#FFFFFF"/>
   <path d="M256 421C225 391 84 304 84 190c0-73 88-108 145-57 12 11 21 24 27 39 6-15 15-28 27-39 57-51 145-16 145 57 0 114-141 201-172 231Z" fill="url(#heart)"/>
-  <path d="M321 246h26c8 0 14 6 14 14v25h25c8 0 14 6 14 14v20c0 8-6 14-14 14h-25v25c0 8-6 14-14 14h-26c-8 0-14-6-14-14v-25h-25c-8 0-14-6-14-14v-20c0-8 6-14 14-14h25v-25c0-8 6-14 14-14Z" fill="url(#plus)"/>
+  <rect x="275" y="259" width="94" height="42" rx="16" fill="url(#plus)"/>
+  <rect x="301" y="233" width="42" height="94" rx="16" fill="url(#plus)"/>
 </svg>

@@ -48,9 +48,9 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-notification-logo-20260810")
-        self.assertContains(response, "briga-notification-icon-512.png?v=20260810")
-        self.assertContains(response, "briga-notification-badge-96.png?v=20260810")
+        self.assertContains(response, "briga-plus-notification-logo-20260811")
+        self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
+        self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
