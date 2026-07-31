@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Briga+ koristi lokaciju samo kada vi pošaljete SOS, da porodica može da otvori rutu do vas.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Briga+ koristi lokaciju tokom aktivnog SOS poziva, uključujući rad u pozadini, kako bi izabrani članovi porodice mogli da vide vašu trenutnu lokaciju i otvore rutu do vas.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Briga+ koristi mikrofon samo kada vi pokrenete snimanje glasovne poruke za porodicu.</string>
 	<key>NSCameraUsageDescription</key>
