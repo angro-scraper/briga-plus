@@ -43,18 +43,19 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.4')
+        self.assertEqual(response.json()['version'], '0.6.5')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-fast-senior-direct-sos-20260815")
+        self.assertContains(response, "briga-plus-instant-senior-start-20260816")
         self.assertContains(response, "/static/sos-location.js?v=20260813")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
         self.assertContains(response, 'self.skipWaiting()')
         self.assertContains(response, "url.pathname.startsWith('/static/')")
+        self.assertContains(response, 'if (cached) return cached')
         self.assertContains(response, "payload.kind === 'sos' ? '/?open=sos-detail'")
 
     def test_sophie_speech_requires_configured_service(self):
@@ -77,6 +78,7 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, '/static/briga-v2.css?v=20260815')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
         self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
+        self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
 
     def test_family_mobile_header_identifies_the_person_receiving_care(self):
         senior = User.objects.create_user(
@@ -228,11 +230,13 @@ class DashboardFlowTests(TestCase):
 
     def test_both_health_panels_use_only_sophie_narration(self):
         response = self.client.get('/')
-        self.assertContains(response, '/static/mobile-enhancements.js?v=20260806')
+        self.assertContains(response, '/static/mobile-enhancements.js?v=20260816')
         script = open('static/mobile-enhancements.js', encoding='utf-8').read()
         self.assertIn("#read-health-mobile, #read-health", script)
         self.assertIn("fetch('/sophie-govor/'", script)
         self.assertIn('Ne prebacujemo na drugi glas.', script)
+        self.assertIn('if (cached) {', script)
+        self.assertIn('requestIdleCallback(registerWhenIdle', script)
 
     def test_main_application_routes_are_available_to_a_signed_in_user(self):
         for path in ('/', '/nalog/', '/politika-privatnosti/', '/uslovi-koriscenja/', '/service-worker.js', '/zdravlje/'):
@@ -659,7 +663,7 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, 'class="picture-greeting picture-care-hero"')
         self.assertContains(response, '/static/illustrations/family-care-hero.webp', count=2)
         self.assertContains(response, 'fetchpriority="high"')
-        self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260806"></script>')
+        self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
 
     def test_cared_person_can_add_pdf_to_personal_health_diary(self):
         senior = User.objects.create_user('gordana_panel', password='bezbedna-lozinka-123')

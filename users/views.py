@@ -311,7 +311,7 @@ def health(request):
     return JsonResponse({
         'status': 'ok',
         'application': 'Briga+',
-        'version': '0.6.4',
+        'version': '0.6.5',
         'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
         'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
         'android_app_links_configured': bool(settings.BRIGA_ANDROID_APP_LINK_SHA256),
@@ -536,11 +536,11 @@ def dashboard(request):
     if not membership and request.user.is_staff:
         return redirect('kontrola')
     family = membership.family if membership else None
-    senior_membership = family.memberships.filter(role=Membership.Role.SENIOR).select_related('user').first() if family else None
     # URL ostaje jednostavan (/), ali se za čuvano lice odmah prikazuje
     # potpuno odvojeni lični panel — nikada porodički upravljački ekran.
     if membership and membership.role == Membership.Role.SENIOR:
-        return senior_dashboard(request)
+        return senior_dashboard(request, membership=membership)
+    senior_membership = family.memberships.filter(role=Membership.Role.SENIOR).select_related('user').first() if family else None
     health_access = can_view_health(membership)
     care_user = senior_membership.user if senior_membership and health_access else request.user
 
@@ -885,9 +885,9 @@ def dashboard(request):
 
 @never_cache
 @login_required
-def senior_dashboard(request):
+def senior_dashboard(request, membership=None):
     """Zaseban, smiren početni ekran isključivo za čuvano lice."""
-    membership = request.user.family_memberships.filter(
+    membership = membership or request.user.family_memberships.filter(
         role=Membership.Role.SENIOR,
     ).select_related('family').first()
     if not membership:

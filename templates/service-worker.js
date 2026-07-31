@@ -1,10 +1,12 @@
-const CACHE = 'briga-plus-fast-senior-direct-sos-20260815';
+const CACHE = 'briga-plus-instant-senior-start-20260816';
 const OFFLINE = [
   '/static/briga-v2.css?v=20260815',
   '/static/briga-v2.js?v=20260803',
   '/static/sos-location.js?v=20260813',
-  '/static/mobile-enhancements.js?v=20260806',
+  '/static/mobile-enhancements.js?v=20260816',
   '/static/chat-live.js?v=20260807',
+  '/static/deep-links.js?v=20260803',
+  '/static/senior-guidance.js?v=20260803',
   '/static/briga-mark.svg',
   '/static/briga-ui-icons.svg',
   '/static/illustrations/family-care-hero.webp',
@@ -31,16 +33,14 @@ self.addEventListener('fetch', event => {
   // Samo statičke datoteke dobijaju brz odgovor iz lokalnog keša.
   if (url.origin !== self.location.origin || !url.pathname.startsWith('/static/')) return;
   event.respondWith(caches.match(event.request).then(cached => {
-    const refresh = fetch(event.request).then(response => {
+    if (cached) return cached;
+    return fetch(event.request).then(response => {
       if (response.ok) {
         const copy = response.clone();
         caches.open(CACHE).then(cache => cache.put(event.request, copy));
       }
       return response;
     });
-    if (!cached) return refresh;
-    event.waitUntil(refresh.catch(() => {}));
-    return cached;
   }));
 });
 

@@ -117,25 +117,31 @@
   const nativePushPlugin = window.Capacitor?.Plugins?.PushNotifications;
   nativePushPlugin?.addListener?.('pushNotificationActionPerformed', openNotificationTarget);
   window.Capacitor?.Plugins?.LocalNotifications?.addListener?.('localNotificationActionPerformed', openNotificationTarget);
+  const nativePlatform = window.Capacitor?.getPlatform?.() === 'ios' ? 'ios' : 'android';
+  const nativeUserId = document.body.dataset.userId || 'anonymous';
+  const nativeCacheKey = `briga-native-push-${nativePlatform}-${nativeUserId}`;
+  const readNativeCache = () => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(nativeCacheKey) || 'null');
+      return cached?.token && Date.now() - cached.savedAt < 24 * 60 * 60 * 1000 ? cached : null;
+    } catch (_) {
+      return null;
+    }
+  };
   let nativeRegistrationPromise = null;
   const saveNativeToken = async registration => {
-    const platform = window.Capacitor.getPlatform?.() === 'ios' ? 'ios' : 'android';
-    const userId = document.body.dataset.userId || 'anonymous';
-    const cacheKey = `briga-native-push-${platform}-${userId}`;
-    try {
-      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-      if (cached?.token === registration.value && Date.now() - cached.savedAt < 24 * 60 * 60 * 1000) {
-        return { delivery_configured: cached.deliveryConfigured, cached: true };
-      }
-    } catch (_) { /* Neispravan stari zapis se bezbedno zamenjuje. */ }
+    const cached = readNativeCache();
+    if (cached?.token === registration.value) {
+      return { delivery_configured: cached.deliveryConfigured, cached: true };
+    }
     const response = await fetch('/native-push-pretplata/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
-      body: JSON.stringify({ token: registration.value, platform }),
+      body: JSON.stringify({ token: registration.value, platform: nativePlatform }),
     });
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error('Telefon nije sačuvan uz nalog.');
-    localStorage.setItem(cacheKey, JSON.stringify({
+    localStorage.setItem(nativeCacheKey, JSON.stringify({
       token: registration.value,
       deliveryConfigured: Boolean(result.delivery_configured),
       savedAt: Date.now(),
@@ -153,7 +159,7 @@
         if (askPermission) throw new Error('Dozvola za obaveštenja nije data. Uključite je u podešavanjima telefona.');
         return null;
       }
-      if (window.Capacitor.getPlatform?.() === 'android') {
+      if (nativePlatform === 'android') {
         await nativePushPlugin.createChannel?.({
           id: 'briga_vazno',
           name: 'Briga+ važna obaveštenja',
@@ -192,17 +198,28 @@
     return nativeRegistrationPromise;
   };
 
-  // Ako je korisnik ranije već dao dozvolu, token se pri svakom otvaranju
-  // tiho obnavlja uz trenutno prijavljen nalog. Ne prikazujemo novi sistemski upit.
+  const showNativeReady = deliveryConfigured => {
+    if (!pushStatus || !pushButton) return;
+    pushStatus.textContent = deliveryConfigured
+      ? 'SOS i važni podsetnici su uključeni na ovom telefonu.'
+      : 'Telefon je povezan, ali serverska isporuka još nije podešena.';
+    pushButton.textContent = 'Obaveštenja uključena';
+    pushButton.disabled = true;
+  };
+
+  // Već registrovan telefon ne sme pri svakom pokretanju ponovo da čeka
+  // native registraciju. Prva registracija se pokreće tek kada je ekran spreman.
   if (nativePushPlugin) {
-    registerNativePush().then(result => {
-      if (!result || !pushStatus || !pushButton) return;
-      pushStatus.textContent = result.delivery_configured
-        ? 'SOS i važni podsetnici su uključeni na ovom telefonu.'
-        : 'Telefon je povezan, ali serverska isporuka još nije podešena.';
-      pushButton.textContent = 'Obaveštenja uključena';
-      pushButton.disabled = true;
-    }).catch(() => { /* Ručni pokušaj ostaje dostupan u prozoru Obaveštenja. */ });
+    const cached = readNativeCache();
+    if (cached) {
+      showNativeReady(cached.deliveryConfigured);
+    } else {
+      const registerWhenIdle = () => registerNativePush().then(result => {
+        if (result) showNativeReady(result.delivery_configured);
+      }).catch(() => { /* Ručni pokušaj ostaje dostupan u prozoru Obaveštenja. */ });
+      if ('requestIdleCallback' in window) window.requestIdleCallback(registerWhenIdle, { timeout: 4000 });
+      else window.setTimeout(registerWhenIdle, 2500);
+    }
   }
 
   if (pushButton && pushStatus) pushButton.addEventListener('click', async () => {
