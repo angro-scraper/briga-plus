@@ -47,7 +47,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-sos-gps-20260804")
+        self.assertContains(response, "briga-plus-chat-sos-20260805")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -67,7 +67,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260804')
+        self.assertContains(response, '/static/briga-v2.css?v=20260805')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
@@ -85,6 +85,39 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/?open=chat')
         self.assertContains(response, 'Stižem za deset minuta.')
         self.assertContains(response, "modal.showModal()")
+
+    def test_chat_shows_latest_messages_and_has_fixed_mobile_composer(self):
+        for number in range(55):
+            Message.objects.create(
+                family=self.family, sender=self.user, body=f'Poruka broj {number}',
+            )
+
+        response = self.client.get('/?open=chat')
+
+        self.assertNotIn('Poruka broj 0', [message.body for message in response.context['chat_messages']])
+        self.assertEqual(len(response.context['chat_messages']), 50)
+        self.assertContains(response, 'Poruka broj 54')
+        self.assertContains(response, 'class="chat-scroll"')
+        self.assertContains(response, 'class="chat-composer"')
+        self.assertContains(response, 'enterkeyhint="send"')
+
+    def test_senior_can_use_same_family_chat_without_leaving_it(self):
+        senior = User.objects.create_user('baka_chat', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+
+        response = self.client.post('/moj-dan/', {
+            'action': 'message', 'body': 'Dobro sam, vidimo se kasnije.',
+        })
+
+        self.assertRedirects(response, '/?open=chat')
+        self.assertTrue(Message.objects.filter(
+            family=self.family, sender=senior, body='Dobro sam, vidimo se kasnije.',
+        ).exists())
+        self.assertTrue(self.user.alerts.filter(kind=Alert.Kind.MESSAGE).exists())
+        response = self.client.get('/?open=chat')
+        self.assertContains(response, 'id="chat"')
+        self.assertContains(response, 'Dobro sam, vidimo se kasnije.')
 
     def test_main_application_routes_are_available_to_a_signed_in_user(self):
         for path in ('/', '/nalog/', '/politika-privatnosti/', '/uslovi-koriscenja/', '/service-worker.js', '/zdravlje/'):
@@ -257,6 +290,23 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(str(sos.longitude), '20.448922')
         self.assertEqual(sos.accuracy_meters, 19)
         self.assertEqual(sos.note, 'Potrebna mi je pomoć.')
+
+    @patch('users.views.send_push_alert', return_value={'native_sent': 1, 'web_sent': 0})
+    def test_sos_alert_is_saved_and_pushed_to_every_other_family_member(self, send_push):
+        caregiver = User.objects.create_user('sos_caregiver', password='bezbedna-lozinka-123')
+        senior = User.objects.create_user('sos_senior', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+
+        self.client.post('/', {'action': 'sos', 'latitude': '44.8', 'longitude': '20.4'})
+
+        alerts = Alert.objects.filter(kind=Alert.Kind.SOS).order_by('recipient_id')
+        self.assertEqual(set(alerts.values_list('recipient_id', flat=True)), {caregiver.id, senior.id})
+        self.assertTrue(all(alert.url == '/?open=alerts' for alert in alerts))
+        self.assertEqual(send_push.call_count, 2)
+        delivery_audit = AuditEvent.objects.get(event=AuditEvent.Event.SOS_UPDATED)
+        self.assertEqual(delivery_audit.detail['recipients'], 2)
+        self.assertEqual(delivery_audit.detail['native_sent'], 2)
 
     def test_coordinator_can_create_emergency_contact(self):
         self.client.post('/', {'action': 'contact', 'name': 'Ana Petrović', 'phone': '+381641234567', 'relationship': 'Ćerka', 'priority': '1'})

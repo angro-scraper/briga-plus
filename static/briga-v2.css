@@ -5029,11 +5029,69 @@ body.high-contrast .family-mobile-home button {
   width: min(700px, calc(100vw - 32px));
 }
 
-.modal-chat .messages {
-  max-height: 330px;
+.modal-chat[open],
+.senior-chat-dialog[open] {
+  display: grid;
+  height: min(780px, 88dvh);
+  max-height: 880px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.modal-chat > .chat-scroll,
+.modal-chat > .chat-composer,
+.senior-chat-dialog > .chat-scroll,
+.senior-chat-dialog > .chat-composer {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.chat-scroll {
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  padding: 14px 20px 18px;
+  background: linear-gradient(180deg, #fbfdfb, var(--bp-cream));
+}
+
+.modal-chat .messages {
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
   padding: 2px;
+}
+
+.chat-composer {
+  z-index: 6;
+  border-top: 1px solid var(--bp-border);
+  padding: 10px 20px 16px;
+  background: rgba(255, 253, 249, .98);
+  box-shadow: 0 -10px 28px rgba(11, 53, 42, .07);
+}
+
+.chat-composer .voice-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 9px;
+}
+
+.chat-composer .chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  margin: 0;
+}
+
+.chat-composer .chat-form input,
+.chat-composer .chat-form button {
+  min-height: 52px;
+}
+
+.chat-composer .chat-form button {
+  min-width: 108px;
+  border-radius: 14px;
 }
 
 .message time,
@@ -5112,6 +5170,41 @@ body.high-contrast .family-mobile-home button {
 
   .modal-chat .messages {
     max-height: none;
+  }
+
+  .modal-chat[open],
+  .senior-chat-dialog[open] {
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .chat-scroll {
+    padding: 12px 13px 18px;
+  }
+
+  .chat-composer {
+    padding: 9px 13px max(11px, env(safe-area-inset-bottom));
+  }
+
+  .chat-composer .voice-form {
+    margin-bottom: 8px;
+  }
+
+  .chat-composer .voice-form .text-control {
+    min-height: 42px;
+  }
+
+  .chat-composer .chat-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .chat-composer .chat-form button {
+    min-width: 94px;
   }
 }
 

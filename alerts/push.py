@@ -114,24 +114,35 @@ def _send_ios_apns(device, alert):
 
 def send_native_push_alert(alert):
     """Šalje alert svim registrovanim telefonima primaoca."""
+    result_counts = {'sent': 0, 'failed': 0, 'disabled': 0, 'invalid': 0}
     for device in NativePushDevice.objects.filter(user=alert.recipient):
         if device.platform == NativePushDevice.Platform.ANDROID:
             result = _send_android_fcm(device, alert)
         else:
             result = _send_ios_apns(device, alert)
+        result_counts[result] = result_counts.get(result, 0) + 1
         if result == 'invalid':
             device.delete()
+    return result_counts
 
 
 def send_push_alert(alert):
     """Šalje isti alert web preglednicima i native Android/iOS aplikacijama."""
-    send_native_push_alert(alert)
+    native = send_native_push_alert(alert)
+    delivery = {
+        'native_sent': native['sent'],
+        'native_registered': sum(native.values()),
+        'native_failed': native['failed'] + native['invalid'],
+        'web_sent': 0,
+    }
     if not settings.VAPID_PUBLIC_KEY or not settings.VAPID_PRIVATE_KEY:
-        return
+        logger.info('Briga+ push kind=%s recipient=%s delivery=%s', alert.kind, alert.recipient_id, delivery)
+        return delivery
     try:
         from pywebpush import WebPushException, webpush
     except ImportError:
-        return
+        logger.info('Briga+ push kind=%s recipient=%s delivery=%s', alert.kind, alert.recipient_id, delivery)
+        return delivery
 
     payload = json.dumps({'title': alert.title, 'body': alert.body, 'url': alert.url or '/'})
     for subscription in PushSubscription.objects.filter(user=alert.recipient):
@@ -145,7 +156,10 @@ def send_push_alert(alert):
                 vapid_private_key=settings.VAPID_PRIVATE_KEY,
                 vapid_claims={'sub': settings.VAPID_SUBJECT},
             )
+            delivery['web_sent'] += 1
         except WebPushException as error:
             response = getattr(error, 'response', None)
             if response is not None and response.status_code in {404, 410}:
                 subscription.delete()
+    logger.info('Briga+ push kind=%s recipient=%s delivery=%s', alert.kind, alert.recipient_id, delivery)
+    return delivery

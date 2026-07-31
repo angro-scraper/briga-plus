@@ -110,65 +110,94 @@
   const nativePushPlugin = window.Capacitor?.Plugins?.PushNotifications;
   nativePushPlugin?.addListener?.('pushNotificationActionPerformed', openNotificationTarget);
   window.Capacitor?.Plugins?.LocalNotifications?.addListener?.('localNotificationActionPerformed', openNotificationTarget);
+  let nativeRegistrationPromise = null;
+  const saveNativeToken = async registration => {
+    const platform = window.Capacitor.getPlatform?.() === 'ios' ? 'ios' : 'android';
+    const response = await fetch('/native-push-pretplata/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+      body: JSON.stringify({ token: registration.value, platform }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error('Telefon nije sačuvan uz nalog.');
+    return result;
+  };
+  const registerNativePush = async ({ askPermission = false } = {}) => {
+    if (!nativePushPlugin) return null;
+    if (nativeRegistrationPromise) return nativeRegistrationPromise;
+    nativeRegistrationPromise = (async () => {
+      const permission = askPermission
+        ? await nativePushPlugin.requestPermissions()
+        : await nativePushPlugin.checkPermissions();
+      if (permission.receive !== 'granted') {
+        if (askPermission) throw new Error('Dozvola za obaveštenja nije data. Uključite je u podešavanjima telefona.');
+        return null;
+      }
+      if (window.Capacitor.getPlatform?.() === 'android') {
+        await nativePushPlugin.createChannel?.({
+          id: 'briga_vazno',
+          name: 'Briga+ važna obaveštenja',
+          description: 'SOS, terapija, porodične poruke i važni podsetnici',
+          importance: 5,
+          visibility: 1,
+          vibration: true,
+        });
+      }
+      return new Promise(async (resolve, reject) => {
+        let finished = false;
+        let successHandle;
+        let errorHandle;
+        const finish = async (callback, value) => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(timeoutId);
+          await successHandle?.remove?.();
+          await errorHandle?.remove?.();
+          callback(value);
+        };
+        successHandle = await nativePushPlugin.addListener('registration', async registration => {
+          try { await finish(resolve, await saveNativeToken(registration)); }
+          catch (error) { await finish(reject, error); }
+        });
+        errorHandle = await nativePushPlugin.addListener('registrationError', () => {
+          finish(reject, new Error('Povezivanje telefona nije uspelo.'));
+        });
+        const timeoutId = window.setTimeout(() => {
+          finish(reject, new Error('Povezivanje telefona traje predugo. Pokušajte ponovo.'));
+        }, 8000);
+        try { await nativePushPlugin.register(); }
+        catch (error) { await finish(reject, error); }
+      });
+    })().finally(() => { nativeRegistrationPromise = null; });
+    return nativeRegistrationPromise;
+  };
+
+  // Ako je korisnik ranije već dao dozvolu, token se pri svakom otvaranju
+  // tiho obnavlja uz trenutno prijavljen nalog. Ne prikazujemo novi sistemski upit.
+  if (nativePushPlugin) {
+    registerNativePush().then(result => {
+      if (!result || !pushStatus || !pushButton) return;
+      pushStatus.textContent = result.delivery_configured
+        ? 'SOS i važni podsetnici su uključeni na ovom telefonu.'
+        : 'Telefon je povezan, ali serverska isporuka još nije podešena.';
+      pushButton.textContent = 'Obaveštenja uključena';
+      pushButton.disabled = true;
+    }).catch(() => { /* Ručni pokušaj ostaje dostupan u prozoru Obaveštenja. */ });
+  }
+
   if (pushButton && pushStatus) pushButton.addEventListener('click', async () => {
     const key = pushButton.dataset.vapidKey || '';
     try {
       pushButton.disabled = true; pushButton.textContent = 'Proveravamo dozvolu…';
-      const nativePush = window.Capacitor?.Plugins?.PushNotifications;
-      if (nativePush) {
-        const permission = await nativePush.requestPermissions();
-        if (permission.receive !== 'granted') throw new Error('Dozvola za obaveštenja nije data. Uključite je u podešavanjima telefona.');
-        if (window.Capacitor.getPlatform?.() === 'android') {
-          await nativePush.createChannel?.({
-            id: 'briga_vazno',
-            name: 'Briga+ važna obaveštenja',
-            description: 'SOS, terapija, porodične poruke i važni podsetnici',
-            importance: 5,
-            visibility: 1,
-            vibration: true,
-          });
-        }
-        pushStatus.textContent = 'Dozvola je odobrena. Pripremamo ovaj telefon za Briga+ obaveštenja…';
-        pushButton.textContent = 'Povezujemo uređaj…';
-        let resultShown = false;
-        const finish = (message, enabled) => {
-          if (resultShown) return;
-          resultShown = true;
-          pushStatus.textContent = message;
-          pushButton.textContent = enabled ? 'Obaveštenja dozvoljena' : 'Pokušaj ponovo';
-          pushButton.disabled = enabled;
-        };
-        nativePush.addListener('registration', async registration => {
-          try {
-            const platform = window.Capacitor.getPlatform?.() === 'ios' ? 'ios' : 'android';
-            const response = await fetch('/native-push-pretplata/', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
-              body: JSON.stringify({ token: registration.value, platform }),
-            });
-            const result = await response.json();
-            if (!response.ok || !result.ok) throw new Error();
-            finish(
-              result.delivery_configured
-                ? 'SOS i važni podsetnici su uključeni na ovom telefonu.'
-                : 'Telefon je povezan. Serverski ključ za isporuku još treba završno podesiti.',
-              true,
-            );
-          } catch (_) {
-            finish('Dozvola je data, ali telefon nije sačuvan uz nalog. Pokušajte ponovo.', false);
-          }
-        });
-        nativePush.addListener('registrationError', () => {
-          finish('Dozvola je data, ali povezivanje telefona nije uspelo. Pokušajte ponovo kasnije.', false);
-        });
-        await nativePush.register();
-        window.setTimeout(() => {
-          if (!resultShown) {
-            pushStatus.textContent = 'Dozvola je data, ali povezivanje telefona još nije završeno. Pokušajte ponovo.';
-            pushButton.textContent = 'Pokušaj ponovo';
-            pushButton.disabled = false;
-          }
-        }, 5000);
+      if (nativePushPlugin) {
+        pushStatus.textContent = 'Povezujemo ovaj telefon sa vašim Briga+ nalogom…';
+        const result = await registerNativePush({ askPermission: true });
+        if (!result) throw new Error('Dozvola za obaveštenja nije data.');
+        pushStatus.textContent = result.delivery_configured
+          ? 'SOS i važni podsetnici su uključeni na ovom telefonu.'
+          : 'Telefon je povezan. Serverski ključ za isporuku još treba završno podesiti.';
+        pushButton.textContent = 'Obaveštenja uključena';
+        pushButton.disabled = true;
         return;
       }
       if (!key) throw new Error('Push ključevi još nisu podešeni na serveru.');

@@ -42,18 +42,41 @@ def audit(actor, event, family=None, target='', detail=None):
 
 
 def notify_family(family, sender, kind, title, body='', url='/'):
-    recipients = family.memberships.exclude(user=sender).values_list('user_id', flat=True)
-    alerts = Alert.objects.bulk_create([
-        Alert(recipient_id=user_id, kind=kind, title=title, body=body, url=url) for user_id in recipients
-    ])
-    for alert in alerts:
-        send_push_alert(alert)
+    """Pouzdano čuva i šalje obaveštenje svakom drugom članu porodice."""
+    recipient_ids = list(
+        family.memberships.exclude(user=sender)
+        .values_list('user_id', flat=True)
+        .distinct()
+    )
+    delivery = {
+        'recipients': len(recipient_ids), 'native_sent': 0,
+        'native_registered': 0, 'native_failed': 0, 'web_sent': 0,
+    }
+    # SOS ne koristi bulk_create: svaki Alert mora sigurno imati PK pre slanja
+    # prema APNs/FCM i ostaje vidljiv u aplikaciji čak i kada push nije uključen.
+    for user_id in recipient_ids:
+        alert = Alert.objects.create(
+            recipient_id=user_id, kind=kind, title=title, body=body, url=url,
+        )
+        result = send_push_alert(alert) or {}
+        delivery['native_sent'] += result.get('native_sent', 0)
+        delivery['native_registered'] += result.get('native_registered', 0)
+        delivery['native_failed'] += result.get('native_failed', 0)
+        delivery['web_sent'] += result.get('web_sent', 0)
+    return delivery
 
 
 def notify_user(recipient, kind, title, body='', url='/'):
     """Kratko stanje SOS odgovora vraća se osobi koja je poslala poziv."""
     alert = Alert.objects.create(recipient=recipient, kind=kind, title=title, body=body, url=url)
     send_push_alert(alert)
+
+
+def recent_chronological(queryset, limit=50):
+    """Vraća poslednje stavke, ali redom kojim se razgovor prirodno čita."""
+    items = list(queryset.order_by('-created_at', '-pk')[:limit])
+    items.reverse()
+    return items
 
 
 def can_coordinate(membership):
@@ -614,8 +637,18 @@ def dashboard(request):
             audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {
                 'has_location': bool(emergency.latitude), 'accuracy_meters': emergency.accuracy_meters,
             })
-            notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
-            messages.error(request, 'SOS je poslat članovima porodice.')
+            delivery = notify_family(
+                family, request.user, Alert.Kind.SOS,
+                f'SOS: {request.user.username} traži pomoć',
+                'Otvorite Briga+ za GPS lokaciju i rutu.', '/?open=alerts',
+            )
+            audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f'SOS #{emergency.id}', {
+                'state': 'notifications_sent', **delivery,
+            })
+            if delivery['recipients']:
+                messages.error(request, f'SOS je poslat za {delivery["recipients"]} člana porodice.')
+            else:
+                messages.error(request, 'SOS je sačuvan, ali još nema drugog člana porodice koji može da ga primi.')
         elif action == 'help_request' and family:
             kind = request.POST.get('kind', EmergencyAlert.Kind.CALL)
             if kind in {EmergencyAlert.Kind.CALL, EmergencyAlert.Kind.UNWELL, EmergencyAlert.Kind.HELP}:
@@ -737,8 +770,8 @@ def dashboard(request):
         'family': family, 'membership': membership, 'care_person': care_user,
         'last_checkin': care_user.checkins.first(), 'reminders': active_reminders[:8], 'next_reminder': next_reminder,
         'overdue_reminders': overdue_reminders[:4], 'tasks': tasks,
-        'chat_messages': family.messages.select_related('sender').all()[:8] if family else [],
-        'voice_messages': family.voice_messages.select_related('sender').all()[:8] if family else [],
+        'chat_messages': recent_chronological(family.messages.select_related('sender')) if family else [],
+        'voice_messages': recent_chronological(family.voice_messages.select_related('sender')) if family else [],
         'sos_active': family.emergencies.filter(resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS).first() if family else None,
         'help_requests': family.emergencies.filter(resolved_at__isnull=True).exclude(kind=EmergencyAlert.Kind.SOS)[:4] if family else [],
         'members': family.memberships.select_related('user').all() if family else [],
@@ -833,6 +866,27 @@ def senior_dashboard(request):
                     attachment=attachment, recorded_at=recorded_at,
                 )
                 messages.success(request, 'Unos je sačuvan u zdravstveni dnevnik.')
+        elif action == 'message':
+            body = request.POST.get('body', '').strip()
+            if body:
+                Message.objects.create(family=family, sender=request.user, body=body)
+                notify_family(
+                    family, request.user, Alert.Kind.MESSAGE,
+                    f'Nova poruka od {request.user.username}', body[:180], '/?open=chat',
+                )
+            return redirect('/?open=chat')
+        elif action == 'voice_message':
+            audio = request.FILES.get('audio')
+            if audio and audio.size <= 12 * 1024 * 1024 and audio.content_type.startswith('audio/'):
+                VoiceMessage.objects.create(family=family, sender=request.user, audio=audio)
+                notify_family(
+                    family, request.user, Alert.Kind.MESSAGE,
+                    f'Glasovna poruka od {request.user.username}',
+                    'Otvorite Briga+ i preslušajte poruku.', '/?open=chat',
+                )
+            else:
+                messages.error(request, 'Glasovna poruka mora biti audio zapis manji od 12 MB.')
+            return redirect('/?open=chat')
         elif action == 'sos':
             emergency = EmergencyAlert.objects.create(
                 family=family, raised_by=request.user,
@@ -845,8 +899,18 @@ def senior_dashboard(request):
             audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {
                 'has_location': bool(emergency.latitude), 'accuracy_meters': emergency.accuracy_meters,
             })
-            notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
-            messages.error(request, 'SOS je poslat porodici.')
+            delivery = notify_family(
+                family, request.user, Alert.Kind.SOS,
+                f'SOS: {request.user.username} traži pomoć',
+                'Otvorite Briga+ za GPS lokaciju i rutu.', '/?open=alerts',
+            )
+            audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f'SOS #{emergency.id}', {
+                'state': 'notifications_sent', **delivery,
+            })
+            if delivery['recipients']:
+                messages.error(request, f'SOS je poslat za {delivery["recipients"]} člana porodice.')
+            else:
+                messages.error(request, 'SOS je sačuvan, ali još nema drugog člana porodice koji može da ga primi.')
         elif action == 'help_request':
             kind = request.POST.get('kind', EmergencyAlert.Kind.CALL)
             if kind in {EmergencyAlert.Kind.CALL, EmergencyAlert.Kind.UNWELL, EmergencyAlert.Kind.HELP}:
@@ -887,6 +951,8 @@ def senior_dashboard(request):
         'active_sos': family.emergencies.filter(
             raised_by=request.user, resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS,
         ).first(),
+        'chat_messages': recent_chronological(family.messages.select_related('sender')),
+        'voice_messages': recent_chronological(family.voice_messages.select_related('sender')),
         'push_public_key': settings.VAPID_PUBLIC_KEY,
     })
 
