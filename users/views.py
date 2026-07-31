@@ -311,7 +311,7 @@ def health(request):
     return JsonResponse({
         'status': 'ok',
         'application': 'Briga+',
-        'version': '0.6.0',
+        'version': '0.6.1',
         'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
         'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
         'android_app_links_configured': bool(settings.BRIGA_ANDROID_APP_LINK_SHA256),

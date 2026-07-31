@@ -43,6 +43,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
+        self.assertEqual(response.json()['version'], '0.6.1')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
