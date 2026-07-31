@@ -47,7 +47,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-mobile-parity-20260803")
+        self.assertContains(response, "briga-plus-sos-gps-20260804")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -67,7 +67,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260803')
+        self.assertContains(response, '/static/briga-v2.css?v=20260804')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
@@ -250,11 +250,12 @@ class DashboardFlowTests(TestCase):
     def test_sos_keeps_received_gps_coordinates(self):
         self.client.post('/', {
             'action': 'sos', 'latitude': '44.786568', 'longitude': '20.448922',
-            'note': 'Potrebna mi je pomoć.',
+            'accuracy': '18.6', 'note': 'Potrebna mi je pomoć.',
         })
         sos = EmergencyAlert.objects.get(family=self.family)
         self.assertEqual(str(sos.latitude), '44.786568')
         self.assertEqual(str(sos.longitude), '20.448922')
+        self.assertEqual(sos.accuracy_meters, 19)
         self.assertEqual(sos.note, 'Potrebna mi je pomoć.')
 
     def test_coordinator_can_create_emergency_contact(self):

@@ -1,7 +1,8 @@
-const CACHE = 'briga-plus-mobile-parity-20260803';
+const CACHE = 'briga-plus-sos-gps-20260804';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260803',
+  '/static/briga-v2.css?v=20260804',
   '/static/briga-v2.js?v=20260803',
+  '/static/sos-location.js?v=20260804',
   '/static/briga-mark.svg',
   '/static/briga-ui-icons.svg',
   '/static/manifest.webmanifest',

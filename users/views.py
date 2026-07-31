@@ -88,6 +88,15 @@ def valid_health_attachment(uploaded):
     )
 
 
+def sos_accuracy_meters(request):
+    """Normalizuje procenu GPS preciznosti koju vraća uređaj."""
+    try:
+        accuracy = round(float(request.POST.get('accuracy', '')))
+    except (TypeError, ValueError):
+        return None
+    return accuracy if 0 < accuracy <= 100_000 else None
+
+
 def remember_senior_device(request, user):
     """Čuvanom licu ne tražimo ponovnu prijavu na istom uređaju godinu dana."""
     if Membership.objects.filter(user=user, role=Membership.Role.SENIOR).exists():
@@ -599,9 +608,12 @@ def dashboard(request):
         elif action == 'sos' and family:
             emergency = EmergencyAlert.objects.create(
                 family=family, raised_by=request.user, latitude=request.POST.get('latitude') or None,
-                longitude=request.POST.get('longitude') or None, note=request.POST.get('note', '').strip()[:280], kind=EmergencyAlert.Kind.SOS,
+                longitude=request.POST.get('longitude') or None, accuracy_meters=sos_accuracy_meters(request),
+                note=request.POST.get('note', '').strip()[:280], kind=EmergencyAlert.Kind.SOS,
             )
-            audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {'has_location': bool(emergency.latitude)})
+            audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {
+                'has_location': bool(emergency.latitude), 'accuracy_meters': emergency.accuracy_meters,
+            })
             notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
             messages.error(request, 'SOS je poslat članovima porodice.')
         elif action == 'help_request' and family:
@@ -826,10 +838,13 @@ def senior_dashboard(request):
                 family=family, raised_by=request.user,
                 latitude=request.POST.get('latitude') or None,
                 longitude=request.POST.get('longitude') or None,
+                accuracy_meters=sos_accuracy_meters(request),
                 note=request.POST.get('note', '').strip()[:280],
                 kind=EmergencyAlert.Kind.SOS,
             )
-            audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {'has_location': bool(emergency.latitude)})
+            audit(request.user, AuditEvent.Event.SOS_CREATED, family, f'SOS #{emergency.id}', {
+                'has_location': bool(emergency.latitude), 'accuracy_meters': emergency.accuracy_meters,
+            })
             notify_family(family, request.user, Alert.Kind.SOS, f'SOS: {request.user.username} traži pomoć', 'Otvorite Briga+ za GPS lokaciju i rutu.')
             messages.error(request, 'SOS je poslat porodici.')
         elif action == 'help_request':

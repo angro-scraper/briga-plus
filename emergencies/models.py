@@ -12,6 +12,7 @@ class EmergencyAlert(models.Model):
     raised_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    accuracy_meters = models.PositiveIntegerField(null=True, blank=True)
     note = models.CharField(max_length=280, blank=True)
     kind = models.CharField(max_length=12, choices=Kind.choices, default=Kind.SOS)
     acknowledged_at = models.DateTimeField(null=True, blank=True)
