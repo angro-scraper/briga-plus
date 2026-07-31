@@ -43,17 +43,19 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.3')
+        self.assertEqual(response.json()['version'], '0.6.4')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-sos-detail-screen-20260814")
+        self.assertContains(response, "briga-plus-fast-senior-direct-sos-20260815")
         self.assertContains(response, "/static/sos-location.js?v=20260813")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
         self.assertContains(response, 'self.skipWaiting()')
+        self.assertContains(response, "url.pathname.startsWith('/static/')")
+        self.assertContains(response, "payload.kind === 'sos' ? '/?open=sos-detail'")
 
     def test_sophie_speech_requires_configured_service(self):
         response = self.client.post(
@@ -72,8 +74,9 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260814')
+        self.assertContains(response, '/static/briga-v2.css?v=20260815')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
+        self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
 
     def test_family_mobile_header_identifies_the_person_receiving_care(self):
         senior = User.objects.create_user(
@@ -126,8 +129,8 @@ class DashboardFlowTests(TestCase):
 
         self.assertContains(response, 'data-notification-kind="sos"')
         self.assertContains(response, 'id="sos-detail"')
-        self.assertContains(response, 'Otvori SOS lokaciju i odgovor')
-        self.assertContains(response, "isSos?'/?open=sos-detail':storedTarget")
+        self.assertContains(response, "isSos&&sosModal instanceof HTMLDialogElement")
+        self.assertContains(response, 'sosModal.showModal()')
         self.assertContains(response, 'query=44.786568,20.448922', count=2)
         self.assertContains(response, 'destination=44.786568,20.448922', count=2)
 
@@ -653,6 +656,10 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, 'data-send-immediately="true"', count=2)
         self.assertNotContains(response, 'id="picture-text-toggle"')
         self.assertContains(response, 'Jedan dodir odmah šalje pomoć')
+        self.assertContains(response, 'class="picture-greeting picture-care-hero"')
+        self.assertContains(response, '/static/illustrations/family-care-hero.webp', count=2)
+        self.assertContains(response, 'fetchpriority="high"')
+        self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260806"></script>')
 
     def test_cared_person_can_add_pdf_to_personal_health_diary(self):
         senior = User.objects.create_user('gordana_panel', password='bezbedna-lozinka-123')

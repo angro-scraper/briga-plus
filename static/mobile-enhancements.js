@@ -104,7 +104,11 @@
   const pushStatus = document.querySelector('#push-status');
   const toUint8Array = value => { const padding = '='.repeat((4 - value.length % 4) % 4); const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/'); return Uint8Array.from(atob(base64), character => character.charCodeAt(0)); };
   const openNotificationTarget = event => {
-    const target = event?.notification?.data?.url || event?.notification?.extra?.url || '/';
+    const notification = event?.notification || {};
+    const kind = notification.data?.kind || notification.extra?.kind || '';
+    const target = kind === 'sos'
+      ? '/?open=sos-detail'
+      : (notification.data?.url || notification.extra?.url || '/');
     try {
       const url = new URL(target, window.location.origin);
       if (url.origin === window.location.origin) window.location.assign(`${url.pathname}${url.search}${url.hash}`);
@@ -116,6 +120,14 @@
   let nativeRegistrationPromise = null;
   const saveNativeToken = async registration => {
     const platform = window.Capacitor.getPlatform?.() === 'ios' ? 'ios' : 'android';
+    const userId = document.body.dataset.userId || 'anonymous';
+    const cacheKey = `briga-native-push-${platform}-${userId}`;
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (cached?.token === registration.value && Date.now() - cached.savedAt < 24 * 60 * 60 * 1000) {
+        return { delivery_configured: cached.deliveryConfigured, cached: true };
+      }
+    } catch (_) { /* Neispravan stari zapis se bezbedno zamenjuje. */ }
     const response = await fetch('/native-push-pretplata/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
@@ -123,6 +135,11 @@
     });
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error('Telefon nije sačuvan uz nalog.');
+    localStorage.setItem(cacheKey, JSON.stringify({
+      token: registration.value,
+      deliveryConfigured: Boolean(result.delivery_configured),
+      savedAt: Date.now(),
+    }));
     return result;
   };
   const registerNativePush = async ({ askPermission = false } = {}) => {

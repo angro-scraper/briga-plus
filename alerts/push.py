@@ -146,7 +146,12 @@ def send_push_alert(alert):
         logger.info('Briga+ push kind=%s recipient=%s delivery=%s', alert.kind, alert.recipient_id, delivery)
         return delivery
 
-    payload = json.dumps({'title': alert.title, 'body': alert.body, 'url': alert.url or '/'})
+    payload = json.dumps({
+        'title': alert.title,
+        'body': alert.body,
+        'url': '/?open=sos-detail' if alert.kind == 'sos' else (alert.url or '/'),
+        'kind': alert.kind,
+    })
     for subscription in PushSubscription.objects.filter(user=alert.recipient):
         try:
             webpush(

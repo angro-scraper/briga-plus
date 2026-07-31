@@ -1,6 +1,6 @@
-const CACHE = 'briga-plus-sos-detail-screen-20260814';
+const CACHE = 'briga-plus-fast-senior-direct-sos-20260815';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260814',
+  '/static/briga-v2.css?v=20260815',
   '/static/briga-v2.js?v=20260803',
   '/static/sos-location.js?v=20260813',
   '/static/mobile-enhancements.js?v=20260806',
@@ -26,20 +26,32 @@ self.addEventListener('activate', event => event.waitUntil(
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(fetch(event.request).then(response => {
-    const copy = response.clone();
-    caches.open(CACHE).then(cache => cache.put(event.request, copy));
-    return response;
-  }).catch(() => caches.match(event.request)));
+  const url = new URL(event.request.url);
+  // Lične, zdravstvene i porodične stranice nikada ne čuvamo u kešu.
+  // Samo statičke datoteke dobijaju brz odgovor iz lokalnog keša.
+  if (url.origin !== self.location.origin || !url.pathname.startsWith('/static/')) return;
+  event.respondWith(caches.match(event.request).then(cached => {
+    const refresh = fetch(event.request).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(event.request, copy));
+      }
+      return response;
+    });
+    if (!cached) return refresh;
+    event.waitUntil(refresh.catch(() => {}));
+    return cached;
+  }));
 });
 
 self.addEventListener('push', event => {
   const payload = event.data ? event.data.json() : {};
+  const target = payload.kind === 'sos' ? '/?open=sos-detail' : (payload.url || '/');
   event.waitUntil(self.registration.showNotification(payload.title || 'Briga+', {
     body: payload.body || 'Imate novo obaveštenje.',
     icon: '/static/briga-notification-icon-512.png?v=20260811',
     badge: '/static/briga-notification-badge-96.png?v=20260811',
-    data: { url: payload.url || '/' },
+    data: { url: target, kind: payload.kind || '' },
   }));
 });
 
