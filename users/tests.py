@@ -321,8 +321,28 @@ class DashboardFlowTests(TestCase):
             'username': 'jelena', 'password': 'bezbedna-lozinka-123',
         })
 
-        self.assertRedirects(response, '/')
+        self.assertRedirects(response, '/moj-dan/')
         self.assertGreaterEqual(self.client.session.get_expiry_age(), 60 * 60 * 24 * 364)
+
+    def test_senior_login_ignores_stale_control_redirect(self):
+        senior = User.objects.create_user('milena_prijava', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.logout()
+
+        response = self.client.post('/prijava/?next=/kontrola/', {
+            'username': 'milena_prijava', 'password': 'bezbedna-lozinka-123',
+        })
+
+        self.assertRedirects(response, '/moj-dan/')
+
+    def test_control_route_returns_cared_person_to_personal_panel(self):
+        senior = User.objects.create_user('milena_kontrola', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+
+        response = self.client.get('/kontrola/')
+
+        self.assertRedirects(response, '/moj-dan/')
 
     def test_senior_cannot_create_or_complete_family_task(self):
         senior = User.objects.create_user('jelena', password='bezbedna-lozinka-123')

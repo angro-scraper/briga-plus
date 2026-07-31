@@ -9,7 +9,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.core.files.storage import default_storage
@@ -214,6 +213,18 @@ class BrigaLoginView(LoginView):
 
     template_name = 'registration/login.html'
 
+    def get_success_url(self):
+        # Čuvano lice nikada ne šaljemo na administratorski ili porodični
+        # ekran koji je ostao u `next` parametru sa prethodnog naloga.
+        if Membership.objects.filter(
+            user=self.request.user, role=Membership.Role.SENIOR,
+        ).exists():
+            return '/moj-dan/'
+        redirect_to = self.get_redirect_url()
+        if redirect_to == '/kontrola/' and not self.request.user.is_staff:
+            return '/'
+        return redirect_to or '/'
+
     def form_valid(self, form):
         response = super().form_valid(form)
         if remember_senior_device(self.request, self.request.user):
@@ -413,8 +424,12 @@ def account(request):
     })
 
 
-@staff_member_required(login_url='prijava')
+@login_required
 def control_center(request):
+    if not request.user.is_staff:
+        if request.user.family_memberships.filter(role=Membership.Role.SENIOR).exists():
+            return redirect('panel_cuvanog_lica')
+        return redirect('pocetna')
     if request.method == 'POST' and request.POST.get('action') == 'platform_resolve_emergency':
         resolved = EmergencyAlert.objects.filter(
             pk=request.POST.get('emergency_id'), resolved_at__isnull=True,
