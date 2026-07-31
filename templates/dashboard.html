@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0d553d">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260805">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260807">
   <title>Briga+ | Porodični panel</title>
 </head>
 <body class="family-dashboard-page {% if membership.role == 'senior' %}senior-account{% elif not has_health_access %}basic-family-account{% endif %}">
@@ -178,12 +178,12 @@
 <dialog class="modal modal-chat" id="chat">
   <div class="modal-head"><div><span class="tool-icon">◉</span><div><p class="eyebrow">PORODIČNI RAZGOVOR</p><h2>Chat</h2></div></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div>
   <div class="chat-scroll" aria-live="polite">
-    <div class="messages">{% for m in chat_messages %}<article class="message {% if m.sender_id == user.id %}mine{% endif %}"><b>{{ m.sender.first_name|default:m.sender.username }}</b><p>{{ m.body }}</p><time>{{ m.created_at|date:"d.m. H:i" }}</time></article>{% empty %}<p class="empty">Pošaljite prvu poruku porodici.</p>{% endfor %}</div>
+    <div class="messages" data-chat-messages>{% for m in chat_messages %}<article class="message {% if m.sender_id == user.id %}mine{% endif %}" data-message-id="{{ m.id }}"><b>{{ m.sender.first_name|default:m.sender.username }}</b><p>{{ m.body }}</p><time>{{ m.created_at|date:"d.m. H:i" }}</time></article>{% empty %}<p class="empty">Pošaljite prvu poruku porodici.</p>{% endfor %}</div>
     <div class="voice-messages">{% for voice in voice_messages %}<article class="voice-message {% if voice.sender_id == user.id %}mine{% endif %}"><b>{{ voice.sender.first_name|default:voice.sender.username }}</b><audio controls preload="metadata" src="{% url 'zasticeni_mediji' voice.audio.name %}">Glasovna poruka</audio></article>{% endfor %}</div>
   </div>
   <div class="chat-composer">
     <form id="voice-form" method="post" class="voice-form">{% csrf_token %}<button id="voice-button-mobile" class="text-control" type="button">● Snimi glasovnu poruku</button><span id="voice-status" aria-live="polite"></span></form>
-    <form method="post" class="chat-form">{% csrf_token %}<input type="hidden" name="action" value="message"><input type="hidden" name="return_modal" value="chat"><label class="sr-only" for="chat-body">Poruka</label><input id="chat-body" name="body" required maxlength="2000" autocomplete="off" enterkeyhint="send" placeholder="Napišite poruku..."><button class="button primary" type="submit">Pošalji</button></form>
+    <form method="post" class="chat-form" data-live-chat-form>{% csrf_token %}<input type="hidden" name="action" value="message"><input type="hidden" name="return_modal" value="chat"><label class="sr-only" for="chat-body">Poruka</label><input id="chat-body" name="body" required maxlength="2000" autocomplete="off" enterkeyhint="send" placeholder="Napišite poruku..."><button class="button primary" type="submit">Pošalji</button></form><span class="chat-send-status" data-chat-status aria-live="polite"></span>
   </div>
 </dialog>
 
@@ -232,6 +232,7 @@ const readHealth=document.querySelector('#read-health'); let healthSpeechActive=
 </script>
 <script src="/static/sos-location.js?v=20260804"></script>
 <script src="/static/mobile-enhancements.js?v=20260806"></script>
+<script src="/static/chat-live.js?v=20260807"></script>
 <script src="/static/deep-links.js?v=20260803"></script>
 <script src="/static/react-native-design.js?v=2"></script>
 <script>

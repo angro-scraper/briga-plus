@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -12,10 +13,11 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.core.files.storage import default_storage
+from django.db import close_old_connections
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.cache import never_cache
 
 from alerts.models import Alert, NativePushDevice, PushSubscription
@@ -28,6 +30,9 @@ from messaging.models import Message, VoiceMessage
 from reminders.models import Reminder
 from users.forms import BrigaRegistrationForm
 from users.models import AuditEvent, PilotFeedback, PrivacyConsent, UserContactProfile
+
+
+_push_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix='briga-chat-push')
 
 
 def audit(actor, event, family=None, target='', detail=None):
@@ -66,6 +71,34 @@ def notify_family(family, sender, kind, title, body='', url='/'):
     return delivery
 
 
+def _deliver_saved_alerts(alert_ids):
+    """Šalje push van web zahteva; sami alerti su već trajno sačuvani."""
+    close_old_connections()
+    try:
+        for alert in Alert.objects.filter(pk__in=alert_ids).select_related('recipient'):
+            send_push_alert(alert)
+    finally:
+        close_old_connections()
+
+
+def notify_family_deferred(family, sender, kind, title, body='', url='/'):
+    """Chat ne čeka mrežu Apple/Google push servisa da bi vratio odgovor."""
+    recipient_ids = list(
+        family.memberships.exclude(user=sender)
+        .values_list('user_id', flat=True)
+        .distinct()
+    )
+    alert_ids = [
+        Alert.objects.create(
+            recipient_id=user_id, kind=kind, title=title, body=body, url=url,
+        ).pk
+        for user_id in recipient_ids
+    ]
+    if alert_ids:
+        _push_executor.submit(_deliver_saved_alerts, alert_ids)
+    return {'recipients': len(recipient_ids)}
+
+
 def notify_user(recipient, kind, title, body='', url='/'):
     """Kratko stanje SOS odgovora vraća se osobi koja je poslala poziv."""
     alert = Alert.objects.create(recipient=recipient, kind=kind, title=title, body=body, url=url)
@@ -77,6 +110,53 @@ def recent_chronological(queryset, limit=50):
     items = list(queryset.order_by('-created_at', '-pk')[:limit])
     items.reverse()
     return items
+
+
+def serialize_chat_message(message, viewer_id):
+    return {
+        'id': message.pk,
+        'body': message.body,
+        'sender': message.sender.first_name or message.sender.username,
+        'mine': message.sender_id == viewer_id,
+        'created_at': timezone.localtime(message.created_at).strftime('%d.%m. %H:%M'),
+    }
+
+
+@never_cache
+@login_required
+@require_http_methods(['GET', 'POST'])
+def chat_messages_api(request):
+    """Brz chat API: čuva poruku bez ponovnog učitavanja celog panela."""
+    membership = request.user.family_memberships.select_related('family').first()
+    if not membership:
+        return JsonResponse({'ok': False, 'error': 'Nalog nije povezan sa porodicom.'}, status=403)
+
+    family = membership.family
+    if request.method == 'POST':
+        body = request.POST.get('body', '').strip()[:2000]
+        if not body:
+            return JsonResponse({'ok': False, 'error': 'Napišite poruku.'}, status=400)
+        message = Message.objects.create(family=family, sender=request.user, body=body)
+        notify_family_deferred(
+            family, request.user, Alert.Kind.MESSAGE,
+            f'Nova poruka od {request.user.username}', body[:180], '/?open=chat',
+        )
+        message.sender = request.user
+        return JsonResponse({'ok': True, 'message': serialize_chat_message(message, request.user.id)})
+
+    try:
+        since_id = max(0, int(request.GET.get('since', '0')))
+    except (TypeError, ValueError):
+        since_id = 0
+    queryset = family.messages.select_related('sender')
+    messages_list = (
+        list(queryset.filter(pk__gt=since_id).order_by('pk')[:50])
+        if since_id else recent_chronological(queryset)
+    )
+    return JsonResponse({
+        'ok': True,
+        'messages': [serialize_chat_message(message, request.user.id) for message in messages_list],
+    })
 
 
 def can_coordinate(membership):
@@ -549,12 +629,12 @@ def dashboard(request):
             body = request.POST.get('body', '').strip()
             if body:
                 Message.objects.create(family=family, sender=request.user, body=body)
-                notify_family(family, request.user, Alert.Kind.MESSAGE, f'Nova poruka od {request.user.username}', body[:180], '/?open=chat')
+                notify_family_deferred(family, request.user, Alert.Kind.MESSAGE, f'Nova poruka od {request.user.username}', body[:180], '/?open=chat')
         elif action == 'voice_message' and family:
             audio = request.FILES.get('audio')
             if audio and audio.size <= 12 * 1024 * 1024 and audio.content_type.startswith('audio/'):
                 VoiceMessage.objects.create(family=family, sender=request.user, audio=audio)
-                notify_family(family, request.user, Alert.Kind.MESSAGE, f'Glasovna poruka od {request.user.username}', 'Otvorite Briga+ i preslušajte poruku.', '/?open=chat')
+                notify_family_deferred(family, request.user, Alert.Kind.MESSAGE, f'Glasovna poruka od {request.user.username}', 'Otvorite Briga+ i preslušajte poruku.', '/?open=chat')
             else:
                 messages.error(request, 'Glasovna poruka mora biti audio zapis manji od 12 MB.')
         elif action == 'task' and family and can_coordinate(membership):
@@ -874,7 +954,7 @@ def senior_dashboard(request):
             body = request.POST.get('body', '').strip()
             if body:
                 Message.objects.create(family=family, sender=request.user, body=body)
-                notify_family(
+                notify_family_deferred(
                     family, request.user, Alert.Kind.MESSAGE,
                     f'Nova poruka od {request.user.username}', body[:180], '/?open=chat',
                 )
@@ -883,7 +963,7 @@ def senior_dashboard(request):
             audio = request.FILES.get('audio')
             if audio and audio.size <= 12 * 1024 * 1024 and audio.content_type.startswith('audio/'):
                 VoiceMessage.objects.create(family=family, sender=request.user, audio=audio)
-                notify_family(
+                notify_family_deferred(
                     family, request.user, Alert.Kind.MESSAGE,
                     f'Glasovna poruka od {request.user.username}',
                     'Otvorite Briga+ i preslušajte poruku.', '/?open=chat',

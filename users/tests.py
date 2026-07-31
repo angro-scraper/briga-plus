@@ -48,7 +48,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-e2e-20260806")
+        self.assertContains(response, "briga-plus-live-chat-20260807")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -68,7 +68,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260805')
+        self.assertContains(response, '/static/briga-v2.css?v=20260807')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
@@ -101,6 +101,37 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, 'class="chat-scroll"')
         self.assertContains(response, 'class="chat-composer"')
         self.assertContains(response, 'enterkeyhint="send"')
+        self.assertContains(response, 'data-live-chat-form')
+        self.assertContains(response, 'data-chat-messages')
+        self.assertContains(response, '/static/chat-live.js?v=20260807')
+
+    @patch('users.views._push_executor.submit')
+    def test_live_chat_api_saves_immediately_and_defers_push_network(self, submit_push):
+        caregiver = User.objects.create_user('brzi_chat', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+
+        response = self.client.post('/chat/poruke/', {'body': 'Brza poruka bez učitavanja panela.'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
+        message = Message.objects.get(body='Brza poruka bez učitavanja panela.')
+        self.assertEqual(response.json()['message']['id'], message.id)
+        self.assertTrue(caregiver.alerts.filter(kind=Alert.Kind.MESSAGE).exists())
+        submit_push.assert_called_once()
+
+        received = self.client.get(f'/chat/poruke/?since={message.id - 1}').json()['messages']
+        self.assertEqual([item['body'] for item in received], ['Brza poruka bez učitavanja panela.'])
+
+    def test_live_chat_api_never_exposes_another_family(self):
+        from families.models import Family
+        outsider_family = Family.objects.create(name='Druga porodica')
+        outsider = User.objects.create_user('drugi_chat', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=outsider, family=outsider_family, role=Membership.Role.ADMIN)
+        Message.objects.create(family=outsider_family, sender=outsider, body='Privatna poruka druge porodice')
+
+        payload = self.client.get('/chat/poruke/').json()
+
+        self.assertFalse(any(item['body'] == 'Privatna poruka druge porodice' for item in payload['messages']))
 
     def test_senior_can_use_same_family_chat_without_leaving_it(self):
         senior = User.objects.create_user('baka_chat', password='bezbedna-lozinka-123')
