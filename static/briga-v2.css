@@ -3519,6 +3519,37 @@ body.high-contrast .family-mobile-home button {
     font-size: .91rem;
   }
 
+  .family-care-heading {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  .family-mobile-home > header .family-care-message {
+    display: inline-flex;
+    max-width: 210px;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 999px;
+    padding: 5px 9px 5px 7px;
+    color: #fff;
+    background: rgba(255, 255, 255, .12);
+    font-size: .72rem;
+    font-weight: 800;
+    line-height: 1.2;
+    backdrop-filter: blur(8px);
+  }
+
+  .family-care-message .ui-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: #ffd166;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .14));
+  }
+
   .family-header-actions {
     position: relative;
     z-index: 1;
@@ -5128,6 +5159,137 @@ body.high-contrast .family-mobile-home button {
 
 .notification-list article:not(:has(form)) {
   grid-template-columns: 1fr;
+}
+
+.notification-list article {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.notification-list article.is-unread {
+  border-color: var(--bp-green-200);
+  box-shadow: 0 8px 24px rgba(13, 85, 61, .1);
+}
+
+.notification-list article.is-unread::before {
+  position: absolute;
+  z-index: 2;
+  top: 17px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bp-green-500);
+  box-shadow: 0 0 0 4px var(--bp-green-100);
+  content: "";
+  pointer-events: none;
+}
+
+.notification-open {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 4px;
+  border: 0;
+  padding: 15px 42px 12px 30px;
+  color: var(--bp-green-950);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-open:hover,
+.notification-open:focus-visible {
+  background: var(--bp-green-50);
+}
+
+.notification-open .notification-kind {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--bp-green-800);
+  background: var(--bp-green-100);
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.notification-open b {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.notification-open p {
+  margin: 0;
+  color: var(--bp-muted);
+  line-height: 1.45;
+}
+
+.notification-open i {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  display: grid;
+  transform: translateY(-50%);
+  color: transparent;
+  font-size: 0;
+  font-style: normal;
+}
+
+.notification-open i .ui-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--bp-green-600);
+}
+
+.notification-list article > form {
+  justify-self: start;
+  padding: 0 14px 13px 30px;
+}
+
+.notification-detail-card {
+  min-height: 190px;
+  margin: 18px 20px;
+  border: 1px solid var(--bp-green-200);
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(145deg, #fff, var(--bp-green-50));
+  box-shadow: var(--bp-shadow-xs);
+}
+
+.notification-detail-card time {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--bp-green-700);
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.notification-detail-card p {
+  margin: 0;
+  color: var(--bp-green-950);
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.notification-detail-actions {
+  display: grid;
+  gap: 10px;
+  margin: auto 20px 20px;
+}
+
+.notification-detail-actions .button {
+  min-height: 52px;
+  justify-content: center;
+  text-align: center;
+}
+
+.notification-detail-actions [hidden] {
+  display: none;
 }
 
 /* Helpful color cues on the secondary senior cards. */

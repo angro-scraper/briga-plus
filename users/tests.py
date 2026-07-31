@@ -48,7 +48,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-live-chat-20260807")
+        self.assertContains(response, "briga-plus-care-notifications-20260808")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -68,8 +68,37 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260807')
+        self.assertContains(response, '/static/briga-v2.css?v=20260808')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
+
+    def test_family_mobile_header_identifies_the_person_receiving_care(self):
+        senior = User.objects.create_user(
+            'baka_milica', first_name='Milica', password='bezbedna-lozinka-123',
+        )
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+
+        response = self.client.get('/')
+
+        self.assertContains(response, 'class="family-care-message"')
+        self.assertContains(response, 'Brinemo o Milica')
+
+    def test_notifications_are_clickable_and_open_a_detailed_view(self):
+        Alert.objects.create(
+            recipient=self.user,
+            kind=Alert.Kind.REMINDER,
+            title='Vreme je za terapiju',
+            body='Potvrdite da je jutarnja terapija uzeta.',
+            url='/?open=reminders',
+        )
+
+        response = self.client.get('/')
+
+        self.assertContains(response, 'class="notification-open"')
+        self.assertContains(response, 'data-notification-url="/?open=reminders"')
+        self.assertContains(response, 'id="notification-detail"')
+        self.assertContains(response, 'Vreme je za terapiju')
+        self.assertContains(response, 'Potvrdite da je jutarnja terapija uzeta.')
+        self.assertContains(response, "target.startsWith('/')&&!target.startsWith('//')")
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
         caregiver = User.objects.create_user('ana_chat', password='bezbedna-lozinka-123')

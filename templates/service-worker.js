@@ -1,6 +1,6 @@
-const CACHE = 'briga-plus-live-chat-20260807';
+const CACHE = 'briga-plus-care-notifications-20260808';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260807',
+  '/static/briga-v2.css?v=20260808',
   '/static/briga-v2.js?v=20260803',
   '/static/sos-location.js?v=20260804',
   '/static/mobile-enhancements.js?v=20260806',
