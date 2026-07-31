@@ -33,7 +33,7 @@ Pre objavljivanja kopirati `.env.example` u `.env`, upisati pravi tajni ključ i
 - terapije sa dozom, uputstvom, fotografijom pakovanja i dnevnim ponavljanjem;
 - glasovne poruke u porodičnom chatu;
 - režim za starije: veće komande i manje opcija;
-- web-push pretplate i slanje za SOS, poruke, potvrde, terapije i propušten „Dobro sam”.
+- web-push i native Android/iOS slanje za SOS, poruke, potvrde, terapije i propušten „Dobro sam”.
 
 Pre rada sa stvarnim porodičnim podacima potrebno je povezati e-mail/SMS provajdera po izboru, produkcioni PostgreSQL sa backupom, HTTPS i trajno privatno skladište priloga. Politika privatnosti i Uslovi korišćenja sada postoje u aplikaciji, ali ih pre javnog puštanja mora pregledati pravnik i dopuniti punim podacima operatera.
 
@@ -49,6 +49,8 @@ BRIGA_VAPID_SUBJECT=mailto:podrska@briga-plus.rs
 
 Nakon ponovnog pokretanja, korisnik u prozoru „Obaveštenja” bira „Uključi obaveštenja na ovom uređaju”. SOS i poruke šalju push odmah; za dospele terapije i izostalu potvrdu potrebno je periodično pokretanje komande ispod, na primer Render Cron servisom na svakih 10 minuta.
 
+Android native isporuka koristi `BRIGA_FIREBASE_CREDENTIALS_JSON`. iPhone koristi standardni APNs token iz Capacitor omota i promenljive `BRIGA_APNS_TEAM_ID`, `BRIGA_APNS_KEY_ID`, `BRIGA_APNS_PRIVATE_KEY` i `BRIGA_APNS_BUNDLE_ID`. Sve vrednosti ostaju isključivo kao Render tajne. Jedan HTTPS pozivni link otvara instaliranu aplikaciju kada su podešeni `BRIGA_ANDROID_APP_LINK_SHA256` i `BRIGA_APPLE_APP_ID`.
+
 Za internu proveru dospelih podsetnika i izostalih dnevnih potvrda:
 
 ```powershell
@@ -63,7 +65,7 @@ Fotografije pakovanja, dokumenti i glasovne poruke su dostupni samo prijavljenim
 
 ## Lista pre javne objave
 
-1. U Renderu postaviti VAPID ključeve na web servisu i cron servisu, zatim testirati push na Androidu i iPhone-u.
+1. U Renderu postaviti VAPID, Firebase i APNs ključeve na web servisu i cron servisu, zatim testirati push na stvarnom Androidu i iPhone-u.
 2. Kreirati privatni R2/S3 bucket i uneti `BRIGA_STORAGE_*` promenljive.
 3. Zameniti privremenu `podrska@briga-plus.rs` stvarnim kontaktom i dopuniti Politiku privatnosti poslovnim podacima posle pravnog pregleda.
 4. Promeniti početnu lozinku vlasničkog naloga i uključiti višefaktorsku zaštitu na Render, GitHub, Apple i Google nalozima.

@@ -100,6 +100,16 @@
   const pushButton = document.querySelector('#push-button-mobile');
   const pushStatus = document.querySelector('#push-status');
   const toUint8Array = value => { const padding = '='.repeat((4 - value.length % 4) % 4); const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/'); return Uint8Array.from(atob(base64), character => character.charCodeAt(0)); };
+  const openNotificationTarget = event => {
+    const target = event?.notification?.data?.url || event?.notification?.extra?.url || '/';
+    try {
+      const url = new URL(target, window.location.origin);
+      if (url.origin === window.location.origin) window.location.assign(`${url.pathname}${url.search}${url.hash}`);
+    } catch (_) { /* Nepoznata adresa se ne otvara iz bezbednosnih razloga. */ }
+  };
+  const nativePushPlugin = window.Capacitor?.Plugins?.PushNotifications;
+  nativePushPlugin?.addListener?.('pushNotificationActionPerformed', openNotificationTarget);
+  window.Capacitor?.Plugins?.LocalNotifications?.addListener?.('localNotificationActionPerformed', openNotificationTarget);
   if (pushButton && pushStatus) pushButton.addEventListener('click', async () => {
     const key = pushButton.dataset.vapidKey || '';
     try {
@@ -108,6 +118,16 @@
       if (nativePush) {
         const permission = await nativePush.requestPermissions();
         if (permission.receive !== 'granted') throw new Error('Dozvola za obaveštenja nije data. Uključite je u podešavanjima telefona.');
+        if (window.Capacitor.getPlatform?.() === 'android') {
+          await nativePush.createChannel?.({
+            id: 'briga_vazno',
+            name: 'Briga+ važna obaveštenja',
+            description: 'SOS, terapija, porodične poruke i važni podsetnici',
+            importance: 5,
+            visibility: 1,
+            vibration: true,
+          });
+        }
         pushStatus.textContent = 'Dozvola je odobrena. Pripremamo ovaj telefon za Briga+ obaveštenja…';
         pushButton.textContent = 'Povezujemo uređaj…';
         let resultShown = false;
@@ -128,7 +148,12 @@
             });
             const result = await response.json();
             if (!response.ok || !result.ok) throw new Error();
-            finish('Ovaj telefon je povezan sa vašim Briga+ nalogom. Isporuka SOS i podsetnika se aktivira čim se povežu Firebase/APNs ključevi.', true);
+            finish(
+              result.delivery_configured
+                ? 'SOS i važni podsetnici su uključeni na ovom telefonu.'
+                : 'Telefon je povezan. Serverski ključ za isporuku još treba završno podesiti.',
+              true,
+            );
           } catch (_) {
             finish('Dozvola je data, ali telefon nije sačuvan uz nalog. Pokušajte ponovo.', false);
           }

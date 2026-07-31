@@ -18,6 +18,7 @@ from families.models import CareDocument, CareProfile, EmergencyContact, FamilyI
 from checkins.models import MoodEntry
 from django.core.files.uploadedfile import SimpleUploadedFile
 from alerts.models import Alert, NativePushDevice
+from alerts.push import send_push_alert
 from messaging.models import Message
 
 class DashboardFlowTests(TestCase):
@@ -46,7 +47,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-stable-mobile-20260802")
+        self.assertContains(response, "briga-plus-mobile-parity-20260803")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -66,8 +67,8 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260802')
-        self.assertContains(response, '/static/briga-v2.js?v=20260802')
+        self.assertContains(response, '/static/briga-v2.css?v=20260803')
+        self.assertContains(response, '/static/briga-v2.js?v=20260803')
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
         caregiver = User.objects.create_user('ana_chat', password='bezbedna-lozinka-123')
@@ -137,6 +138,29 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['ok'])
         self.assertTrue(NativePushDevice.objects.filter(user=self.user, platform='android', token='a' * 120).exists())
+
+    @patch('alerts.push._send_ios_apns', return_value='sent')
+    @patch('alerts.push._send_android_fcm', return_value='sent')
+    def test_alert_is_sent_to_both_native_mobile_platforms(self, send_android, send_ios):
+        android = NativePushDevice.objects.create(user=self.user, platform='android', token='a' * 120)
+        ios = NativePushDevice.objects.create(user=self.user, platform='ios', token='b' * 120)
+        alert = Alert.objects.create(
+            recipient=self.user, kind=Alert.Kind.SOS, title='SOS', body='Potrebna je pomoć.', url='/?open=alerts',
+        )
+
+        send_push_alert(alert)
+
+        send_android.assert_called_once_with(android, alert)
+        send_ios.assert_called_once_with(ios, alert)
+
+    @patch('alerts.push._send_android_fcm', return_value='invalid')
+    def test_invalid_native_token_is_removed(self, send_android):
+        device = NativePushDevice.objects.create(user=self.user, platform='android', token='c' * 120)
+        alert = Alert.objects.create(recipient=self.user, kind=Alert.Kind.REMINDER, title='Terapija')
+
+        send_push_alert(alert)
+
+        self.assertFalse(NativePushDevice.objects.filter(pk=device.pk).exists())
 
     def test_registration_saves_required_contact_information(self):
         response = self.client.post('/registracija/', {

@@ -27,6 +27,22 @@ services:
         sync: false
       - key: BRIGA_VAPID_SUBJECT
         value: mailto:podrska@briga-plus.rs
+      - key: BRIGA_FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: BRIGA_APNS_TEAM_ID
+        sync: false
+      - key: BRIGA_APNS_KEY_ID
+        sync: false
+      - key: BRIGA_APNS_PRIVATE_KEY
+        sync: false
+      - key: BRIGA_APNS_BUNDLE_ID
+        value: rs.brigaplus.app
+      - key: BRIGA_APNS_USE_SANDBOX
+        value: "0"
+      - key: BRIGA_ANDROID_APP_LINK_SHA256
+        sync: false
+      - key: BRIGA_APPLE_APP_ID
+        sync: false
       - key: BRIGA_AZURE_SPEECH_KEY
         sync: false
       - key: BRIGA_AZURE_SPEECH_REGION
@@ -63,6 +79,18 @@ services:
         sync: false
       - key: BRIGA_VAPID_SUBJECT
         value: mailto:podrska@briga-plus.rs
+      - key: BRIGA_FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: BRIGA_APNS_TEAM_ID
+        sync: false
+      - key: BRIGA_APNS_KEY_ID
+        sync: false
+      - key: BRIGA_APNS_PRIVATE_KEY
+        sync: false
+      - key: BRIGA_APNS_BUNDLE_ID
+        value: rs.brigaplus.app
+      - key: BRIGA_APNS_USE_SANDBOX
+        value: "0"
 databases:
   - name: briga-plus-db
     plan: free

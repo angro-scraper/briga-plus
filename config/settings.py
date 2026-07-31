@@ -148,6 +148,16 @@ if BRIGA_DURABLE_MEDIA_CONFIGURED:
 VAPID_PUBLIC_KEY = os.environ.get('BRIGA_VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.environ.get('BRIGA_VAPID_PRIVATE_KEY', '')
 VAPID_SUBJECT = os.environ.get('BRIGA_VAPID_SUBJECT', 'mailto:podrska@briga-plus.rs')
+# Native push. Android dobija FCM service-account JSON, dok standardni
+# Capacitor PushNotifications na iOS-u vraća APNs token, pa se iPhone
+# obaveštenja šalju direktno Apple servisu.
+FIREBASE_CREDENTIALS_JSON = os.environ.get('BRIGA_FIREBASE_CREDENTIALS_JSON', '')
+APNS_TEAM_ID = os.environ.get('BRIGA_APNS_TEAM_ID', '')
+APNS_KEY_ID = os.environ.get('BRIGA_APNS_KEY_ID', '')
+APNS_PRIVATE_KEY = os.environ.get('BRIGA_APNS_PRIVATE_KEY', '').replace('\\n', '\n')
+APNS_BUNDLE_ID = os.environ.get('BRIGA_APNS_BUNDLE_ID', 'rs.brigaplus.app')
+APNS_USE_SANDBOX = os.environ.get('BRIGA_APNS_USE_SANDBOX', '0') == '1'
+APNS_CONFIGURED = all((APNS_TEAM_ID, APNS_KEY_ID, APNS_PRIVATE_KEY, APNS_BUNDLE_ID))
 AZURE_SPEECH_KEY = os.environ.get('BRIGA_AZURE_SPEECH_KEY', '')
 AZURE_SPEECH_REGION = os.environ.get('BRIGA_AZURE_SPEECH_REGION', '')
 LOGIN_REDIRECT_URL = 'pocetna'

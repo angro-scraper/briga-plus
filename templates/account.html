@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="sr-Latn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d553d">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260730"><title>Moj nalog | Briga+</title></head>
+<html lang="sr-Latn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d553d">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260803"><title>Moj nalog | Briga+</title></head>
 <body class="legal-page"><main class="legal-shell account-shell">
   <a class="brand legal-brand" href="/"><span class="brand-mark"><img src="/static/briga-mark.svg" alt=""></span><span class="brand-word">Briga<span class="brand-plus">+</span></span></a>
   {% for message in messages %}<div class="flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
@@ -9,5 +9,5 @@
   <section><h2>Obaveštenja</h2><p>Na ovom nalogu postoje {{ push_subscriptions }} web uređaja i {{ native_push_devices }} Android/iPhone uređaja za push obaveštenja. Uključivanje radi se u prozoru „Obaveštenja” na svakom uređaju posebno.</p></section>
   <section class="danger-zone"><h2>Brisanje naloga</h2><p>Ova radnja trajno uklanja vaš nalog i podatke koji pripadaju nalogu. Ako ste jedini administrator porodice, prvo prenesite upravljanje drugom članu porodice.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_account"><label>Za potvrdu upišite <strong>OBRIŠI</strong><input name="confirmation" autocomplete="off" required></label><button class="button danger" type="submit">Trajno obriši moj nalog</button></form></section>
   <div class="legal-links"><a href="/">Nazad na panel</a> · <form class="logout-form" method="post" action="{% url 'odjava' %}">{% csrf_token %}<button class="link-button" type="submit">Odjava</button></form></div>
-</main>  <script src="/static/briga-v2.js?v=20260730"></script>
+</main><script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20260803"></script>
 </body></html>

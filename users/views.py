@@ -393,7 +393,12 @@ def native_push_subscribe(request):
         token=token,
         defaults={'user': request.user, 'platform': platform},
     )
-    return JsonResponse({'ok': True})
+    delivery_configured = (
+        bool(settings.FIREBASE_CREDENTIALS_JSON)
+        if platform == NativePushDevice.Platform.ANDROID
+        else settings.APNS_CONFIGURED
+    )
+    return JsonResponse({'ok': True, 'delivery_configured': delivery_configured})
 
 
 @never_cache
