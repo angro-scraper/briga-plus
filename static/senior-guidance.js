@@ -2,16 +2,20 @@
   const greeting = document.querySelector('#voice-greeting');
   if (!greeting) return;
 
-  const listen = document.querySelector('#voice-listen');
+  const listenButtons = [...document.querySelectorAll('#voice-listen, #voice-listen-mobile')];
   const title = document.querySelector('#voice-greeting-title');
   const text = document.querySelector('#voice-greeting-text');
   const kicker = document.querySelector('#voice-greeting-kicker');
   const periodField = document.querySelector('#voice-checkin-period');
-  const scheduleButton = document.querySelector('#voice-reminder-toggle');
-  const scheduleStatus = document.querySelector('#voice-reminder-status');
+  const scheduleButtons = [...document.querySelectorAll('#voice-reminder-toggle, #voice-reminder-toggle-mobile')];
+  const scheduleStatuses = [...document.querySelectorAll('#voice-reminder-status, #voice-reminder-status-mobile')];
   const userName = greeting.dataset.name || '';
   let speaking = false;
   let activeAudio;
+  const setListenText = value => listenButtons.forEach(button => { button.textContent = value; });
+  const setScheduleText = value => scheduleButtons.forEach(button => { button.textContent = value; });
+  const setScheduleDisabled = value => scheduleButtons.forEach(button => { button.disabled = value; });
+  const setScheduleStatus = value => scheduleStatuses.forEach(status => { status.textContent = value; });
 
   const currentPeriod = () => {
     const hour = new Date().getHours();
@@ -44,7 +48,7 @@
   const finishSpeech = () => {
     speaking = false;
     activeAudio = null;
-    listen.textContent = '🔊 Čuj Sophie';
+    setListenText('🔊 Čuj Sophie');
   };
   const speak = async () => {
     if (speaking) {
@@ -53,35 +57,35 @@
       finishSpeech();
       return;
     }
-    listen.textContent = 'Pripremamo Sophie glas…';
+    setListenText('Pripremamo Sophie glas…');
     const narration = `${prompt.title} ${prompt.message}`;
     try {
       const response = await fetch('/sophie-govor/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() }, body: JSON.stringify({ text: narration }) });
       if (response.ok && response.headers.get('content-type')?.includes('audio/')) {
         activeAudio = new Audio(URL.createObjectURL(await response.blob()));
         speaking = true;
-        listen.textContent = '■ Zaustavi Sophie';
+        setListenText('■ Zaustavi Sophie');
         activeAudio.onended = activeAudio.onerror = () => { URL.revokeObjectURL(activeAudio.src); finishSpeech(); };
         await activeAudio.play();
         return;
       }
     } catch (_) { /* Sophie instalirana na uređaju je bezbedna rezerva. */ }
     if (!('speechSynthesis' in window)) {
-      listen.textContent = 'Sophie nije dostupna na ovom uređaju.';
+      setListenText('Sophie nije dostupna na ovom uređaju.');
       return;
     }
     const voice = await waitForSophie();
     if (!voice) {
-      listen.textContent = 'Sophie srpski glas nije dostupan na ovom uređaju.';
+      setListenText('Sophie srpski glas nije dostupan na ovom uređaju.');
       return;
     }
     const utterance = new SpeechSynthesisUtterance(narration);
     utterance.lang = 'sr-RS'; utterance.voice = voice; utterance.rate = .82; utterance.pitch = 1;
-    utterance.onstart = () => { speaking = true; listen.textContent = '■ Zaustavi Sophie'; };
+    utterance.onstart = () => { speaking = true; setListenText('■ Zaustavi Sophie'); };
     utterance.onend = utterance.onerror = finishSpeech;
     speechSynthesis.cancel(); speechSynthesis.speak(utterance);
   };
-  listen.addEventListener('click', speak);
+  listenButtons.forEach(button => button.addEventListener('click', speak));
   greeting.querySelector('form').addEventListener('submit', () => localStorage.setItem(todayKey, 'done'));
 
   const plugin = window.Capacitor?.Plugins?.LocalNotifications;
@@ -91,19 +95,19 @@
     { id: 303, hour: 20, minute: 0, title: 'Dobro veče iz Briga+', body: 'Kako ste večeras? Otvorite Briga+ za kratku dnevnu potvrdu.' },
   ];
   const showScheduleState = enabled => {
-    scheduleStatus.textContent = enabled ? 'Glasovni podsetnici su uključeni u 09:00, 15:00 i 20:00.' : 'Podsetnik u aplikaciji je spreman.';
-    scheduleButton.textContent = enabled ? 'Podsetnici su uključeni' : 'Uključi jutro, popodne i veče';
-    scheduleButton.disabled = enabled;
+    setScheduleStatus(enabled ? 'Glasovni podsetnici su uključeni u 09:00, 15:00 i 20:00.' : 'Podsetnik u aplikaciji je spreman.');
+    setScheduleText(enabled ? 'Podsetnici su uključeni' : 'Uključi jutro, popodne i veče');
+    setScheduleDisabled(enabled);
   };
   showScheduleState(localStorage.getItem('briga-voice-reminders') === '1');
-  scheduleButton.addEventListener('click', async () => {
+  const enableSchedule = async () => {
     if (!plugin) {
-      scheduleStatus.textContent = 'Ova opcija radi u Briga+ Android ili iPhone aplikaciji. U pregledniku vas čeka poruka čim otvorite „Moj dan”.';
+      setScheduleStatus('Ova opcija radi u Briga+ Android ili iPhone aplikaciji. U pregledniku vas čeka poruka čim otvorite „Moj dan”.');
       return;
     }
     try {
-      scheduleButton.disabled = true;
-      scheduleButton.textContent = 'Tražimo dozvolu…';
+      setScheduleDisabled(true);
+      setScheduleText('Tražimo dozvolu…');
       let permission = await plugin.checkPermissions();
       if (permission.display !== 'granted') permission = await plugin.requestPermissions();
       if (permission.display !== 'granted') throw new Error('Dozvola za obaveštenja nije data.');
@@ -111,11 +115,12 @@
       localStorage.setItem('briga-voice-reminders', '1');
       showScheduleState(true);
     } catch (error) {
-      scheduleStatus.textContent = error.message || 'Podsetnike nismo uspeli da uključimo. Pokušajte ponovo.';
-      scheduleButton.disabled = false;
-      scheduleButton.textContent = 'Pokušaj ponovo';
+      setScheduleStatus(error.message || 'Podsetnike nismo uspeli da uključimo. Pokušajte ponovo.');
+      setScheduleDisabled(false);
+      setScheduleText('Pokušaj ponovo');
     }
-  });
+  };
+  scheduleButtons.forEach(button => button.addEventListener('click', enableSchedule));
   plugin?.addListener?.('localNotificationActionPerformed', () => {
     greeting.scrollIntoView({ behavior: 'smooth', block: 'center' });
     window.setTimeout(speak, 300);

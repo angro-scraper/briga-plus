@@ -1,7 +1,7 @@
-const CACHE = 'briga-plus-redizajn-20260730';
+const CACHE = 'briga-plus-sve-funkcije-20260731';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260730',
-  '/static/briga-v2.js?v=20260730',
+  '/static/briga-v2.css?v=20260731',
+  '/static/briga-v2.js?v=20260731',
   '/static/briga-mark.svg',
   '/static/briga-ui-icons.svg',
   '/static/manifest.webmanifest',

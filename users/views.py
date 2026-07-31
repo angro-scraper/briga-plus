@@ -867,6 +867,7 @@ def senior_dashboard(request):
         'active_sos': family.emergencies.filter(
             raised_by=request.user, resolved_at__isnull=True, kind=EmergencyAlert.Kind.SOS,
         ).first(),
+        'push_public_key': settings.VAPID_PUBLIC_KEY,
     })
 
 

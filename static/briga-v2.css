@@ -3194,6 +3194,183 @@ body.high-contrast .family-mobile-home button {
   border-width: 2px;
 }
 
+.all-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.all-tools-grid > button,
+.all-tools-grid > a {
+  display: grid;
+  min-width: 0;
+  min-height: 132px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  gap: 3px 12px;
+  border: 1px solid var(--bp-border);
+  border-radius: 18px;
+  padding: 16px;
+  color: var(--bp-ink);
+  background: var(--bp-white);
+  box-shadow: var(--bp-shadow-xs);
+  text-align: left;
+  text-decoration: none;
+}
+
+.all-tools-grid > button:hover,
+.all-tools-grid > a:hover {
+  border-color: var(--bp-green-300);
+  transform: translateY(-2px);
+  box-shadow: var(--bp-shadow-sm);
+}
+
+.all-tools-grid > button > span,
+.all-tools-grid > a > span {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  grid-row: 1 / span 2;
+  align-items: center;
+  justify-items: center;
+  border-radius: 15px;
+  color: var(--bp-green-700);
+  background: var(--bp-green-100);
+}
+
+.all-tools-grid .ui-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.all-tools-grid b,
+.all-tools-grid small {
+  display: block;
+}
+
+.all-tools-grid b {
+  align-self: end;
+  font-size: .94rem;
+  line-height: 1.2;
+}
+
+.all-tools-grid small {
+  align-self: start;
+  color: var(--bp-muted);
+  font-size: .74rem;
+  line-height: 1.35;
+}
+
+.senior-mood-choices {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.senior-mood-choices form,
+.senior-mood-choices button {
+  width: 100%;
+}
+
+.senior-mood-choices button {
+  display: grid;
+  min-height: 88px;
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 13px;
+  border: 1px solid var(--bp-border);
+  border-radius: 18px;
+  padding: 13px 16px;
+  color: var(--bp-ink);
+  background: var(--bp-white);
+  text-align: left;
+}
+
+.senior-mood-choices button > span,
+.senior-mood-choices button > .ui-icon {
+  width: 46px;
+  height: 46px;
+  grid-row: 1 / span 2;
+  color: var(--bp-green-700);
+  font-size: 2.2rem;
+}
+
+.senior-mood-choices button b {
+  align-self: end;
+  font-size: 1.05rem;
+}
+
+.senior-mood-choices button small {
+  align-self: start;
+  color: var(--bp-muted);
+}
+
+.senior-guidance-card,
+.senior-guidance-box {
+  border: 1px solid var(--bp-border);
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--bp-white);
+}
+
+.senior-guidance-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.senior-guidance-card > span {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-items: center;
+  border-radius: 16px;
+  color: var(--bp-purple-600);
+  background: var(--bp-purple-100);
+}
+
+.senior-guidance-card .ui-icon {
+  width: 29px;
+  height: 29px;
+}
+
+.senior-guidance-card p,
+.senior-guidance-box p {
+  margin: 5px 0 0;
+  color: var(--bp-muted);
+  line-height: 1.45;
+}
+
+.senior-guidance-action,
+.senior-guidance-checkin button,
+.senior-guidance-box button {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 15px;
+  padding: 12px 15px;
+  color: var(--bp-white);
+  background: var(--bp-green-700);
+  font-weight: 900;
+}
+
+.senior-guidance-action,
+.senior-guidance-checkin,
+.senior-guidance-box {
+  margin-top: 13px;
+}
+
+.senior-dialog-list {
+  margin-top: 18px;
+}
+
 /* --------------------------------------------------------------------------
    Responsive family/senior mobile applications
    -------------------------------------------------------------------------- */
@@ -3589,6 +3766,55 @@ body.high-contrast .family-mobile-home button {
     height: 20px;
   }
 
+  .family-all-tools-entry {
+    display: grid;
+    width: 100%;
+    min-height: 76px;
+    grid-template-columns: 48px minmax(0, 1fr) 24px;
+    align-items: center;
+    gap: 12px;
+    margin-top: 13px;
+    border: 1px solid var(--bp-green-200);
+    border-radius: 18px;
+    padding: 12px;
+    color: var(--bp-ink);
+    background: linear-gradient(135deg, var(--bp-green-50), var(--bp-white));
+    box-shadow: var(--bp-shadow-xs);
+    text-align: left;
+  }
+
+  .family-all-tools-entry > span {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    justify-items: center;
+    border-radius: 15px;
+    color: var(--bp-green-700);
+    background: var(--bp-green-100);
+  }
+
+  .family-all-tools-entry .ui-icon {
+    width: 25px;
+    height: 25px;
+  }
+
+  .family-all-tools-entry b,
+  .family-all-tools-entry small {
+    display: block;
+  }
+
+  .family-all-tools-entry small {
+    margin-top: 3px;
+    color: var(--bp-muted);
+    font-size: .72rem;
+    line-height: 1.3;
+  }
+
+  .family-all-tools-entry i {
+    color: var(--bp-green-700);
+  }
+
   .family-mobile-home > nav,
   .picture-bottom-nav {
     position: fixed;
@@ -3597,7 +3823,7 @@ body.high-contrast .family-mobile-home button {
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     min-height: calc(74px + env(safe-area-inset-bottom));
     border-top: 1px solid rgba(212, 204, 190, .9);
     padding: 7px 7px env(safe-area-inset-bottom);
@@ -3889,6 +4115,11 @@ body.high-contrast .family-mobile-home button {
     background: #e8e2f8;
   }
 
+  .picture-card.more > span {
+    color: var(--bp-green-800);
+    background: var(--bp-green-100);
+  }
+
   .picture-card > span .ui-icon,
   .picture-card > button > span .ui-icon {
     width: 31px;
@@ -3945,7 +4176,7 @@ body.high-contrast .family-mobile-home button {
   }
 
   .picture-bottom-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   /* Full-screen mobile details */
@@ -4048,6 +4279,41 @@ body.high-contrast .family-mobile-home button {
   .modal-lead,
   .dialog-lead {
     margin-top: 13px;
+  }
+
+  .all-tools-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 13px;
+  }
+
+  .all-tools-grid > button,
+  .all-tools-grid > a {
+    min-height: 130px;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 3px 9px;
+    border-radius: 16px;
+    padding: 12px 10px;
+  }
+
+  .all-tools-grid > button > span,
+  .all-tools-grid > a > span {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .all-tools-grid .ui-icon {
+    width: 23px;
+    height: 23px;
+  }
+
+  .all-tools-grid b {
+    font-size: .84rem;
+  }
+
+  .all-tools-grid small {
+    font-size: .67rem;
   }
 
   .form-columns {
