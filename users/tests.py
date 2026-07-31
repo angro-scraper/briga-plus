@@ -43,13 +43,14 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.1')
+        self.assertEqual(response.json()['version'], '0.6.2')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-care-hero-links-20260812")
+        self.assertContains(response, "briga-plus-senior-sos-one-tap-20260813")
+        self.assertContains(response, "/static/sos-location.js?v=20260813")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
         self.assertContains(response, 'self.skipWaiting()')
@@ -71,7 +72,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260812')
+        self.assertContains(response, '/static/briga-v2.css?v=20260813')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
 
     def test_family_mobile_header_identifies_the_person_receiving_care(self):
@@ -625,6 +626,10 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, 'data-dialog="therapy"')
         self.assertContains(response, 'id="family-senior"')
         self.assertContains(response, 'data-dialog="family-senior"')
+        self.assertContains(response, 'id="picture-sos"')
+        self.assertContains(response, 'data-send-immediately="true"', count=2)
+        self.assertNotContains(response, 'id="picture-text-toggle"')
+        self.assertContains(response, 'Jedan dodir odmah šalje pomoć')
 
     def test_cared_person_can_add_pdf_to_personal_health_diary(self):
         senior = User.objects.create_user('gordana_panel', password='bezbedna-lozinka-123')

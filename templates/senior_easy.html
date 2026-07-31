@@ -2,7 +2,7 @@
 <html lang="sr">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d553d">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260805"><title>Briga+ | Jednostavno</title>
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260813"><title>Briga+ | Jednostavno</title>
 </head>
 <body class="easy-page">
 <header class="easy-top"><a href="/" class="easy-brand"><img src="/static/briga-mark.svg" alt="Briga+">Briga<span>+</span></a><a href="/" class="easy-link">Moj panel</a></header>
@@ -10,7 +10,7 @@
   <p class="eyebrow">VAŠ JEDNOSTAVAN DAN</p><h1>Sve važno je ovde.</h1><p class="easy-lead">Dodirnite samo ono što vam sada treba.</p><div class="easy-welcome-illustration"><img src="/static/illustrations/briga-care-hand-heart.png" alt="Ruka koja pažljivo štiti srce"><div><b>Tu smo uz vas.</b><span>Niste sami — porodica je samo jedan dodir daleko.</span></div></div>
   <section class="easy-main-grid">
     <article class="easy-reminder">{% if next_reminder %}<span>◷</span><p>SLEDEĆA OBAVEZA</p><b>{{ next_reminder.scheduled_for|date:"H:i" }} · {{ next_reminder.title }}</b><small>{% if next_reminder.dosage %}{{ next_reminder.dosage }} · {% endif %}{{ next_reminder.get_kind_display }}</small><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ next_reminder.id }}"><button>Urađeno ✓</button></form>{% else %}<span>✓</span><p>DANAS</p><b>Trenutno nemate obaveza.</b><small>Mirno i polako.</small>{% endif %}</article>
-    <article class="easy-sos"><span>!</span><p>HITNA POMOĆ</p><b>Treba mi pomoć</b><small>Porodica dobija SOS poruku.</small><form id="easy-sos" method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="accuracy"><button>SOS</button></form></article>
+    <article class="easy-sos"><span>!</span><p>HITNA POMOĆ</p><b>Treba mi pomoć</b><small>Jedan dodir odmah šalje SOS porodici.</small><form id="easy-sos" method="post" action="/" data-send-immediately="true"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="accuracy"><button>SOS</button></form></article>
     <article class="easy-checkin"><span>✓</span><p>BRZA POTVRDA</p><b>Dobro sam</b><small>Porodica odmah dobija poruku.</small><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="checkin"><input type="hidden" name="period" value="any"><button>Pošalji „Dobro sam”</button></form></article>
     <article class="easy-call"><span>☎</span><p>PORODICA JE TU</p>{% if contacts %}<b>Pozovi {{ contacts.0.name }}</b><small>{% if contacts.0.relationship %}{{ contacts.0.relationship }}{% else %}Brzi porodični poziv{% endif %}</small><a href="tel:{{ contacts.0.phone|urlencode }}">Pozovi sada</a>{% else %}<b>Treba mi poziv</b><small>Dodajte kontakt u porodičnom panelu.</small><a href="/">Otvori kontakte</a>{% endif %}</article>
   </section>
@@ -19,6 +19,6 @@
   <section class="easy-section"><h2>Kako se osećate?</h2><div class="easy-moods"><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="good"><button class="mood-good">☺ Dobro</button></form><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="tired"><button class="mood-tired">◔ Umorno</button></form><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="low"><button class="mood-low">☹ Loše</button></form></div>{% if mood_today %}<p class="easy-note">Današnji izbor: {{ mood_today.get_mood_display }}</p>{% endif %}</section>
   <section class="easy-section easy-contact"><h2>Porodica je tu</h2>{% if next_visit %}<p>Sledeća poseta: <b>{{ next_visit.visitor.first_name|default:next_visit.visitor.username }}</b>, {{ next_visit.scheduled_for|date:"d.m." }} u {{ next_visit.scheduled_for|date:"H:i" }}.</p>{% endif %}<div>{% for contact in contacts|slice:":2" %}<a href="tel:{{ contact.phone|urlencode }}">☎ Pozovi {{ contact.name }}</a>{% empty %}<p>Dodajte hitni kontakt u porodičnom panelu.</p>{% endfor %}</div></section>
 </main>
-<script src="/static/sos-location.js?v=20260809"></script>
+<script src="/static/sos-location.js?v=20260813"></script>
   <script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20260803"></script>
 </body></html>

@@ -57,8 +57,10 @@
     form.addEventListener('submit', async event => {
       if (form.dataset.locationReady === 'true') return;
       event.preventDefault();
-      const confirmation = form.dataset.confirmMessage || 'Da li želite da pošaljete SOS porodici?';
-      if (!window.confirm(confirmation)) return;
+      if (form.dataset.sendImmediately !== 'true') {
+        const confirmation = form.dataset.confirmMessage || 'Da li želite da pošaljete SOS porodici?';
+        if (!window.confirm(confirmation)) return;
+      }
 
       const button = form.querySelector('button[type="submit"], button');
       const status = form.querySelector('[aria-live]');

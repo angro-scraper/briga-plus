@@ -1,8 +1,8 @@
-const CACHE = 'briga-plus-care-hero-links-20260812';
+const CACHE = 'briga-plus-senior-sos-one-tap-20260813';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260812',
+  '/static/briga-v2.css?v=20260813',
   '/static/briga-v2.js?v=20260803',
-  '/static/sos-location.js?v=20260809',
+  '/static/sos-location.js?v=20260813',
   '/static/mobile-enhancements.js?v=20260806',
   '/static/chat-live.js?v=20260807',
   '/static/briga-mark.svg',
