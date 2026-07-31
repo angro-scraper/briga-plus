@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Android sistem sam boji malu ikonicu; srce i plus zato ostaju čisti obrisi. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,91 C44,81 17,63 17,39 C17,22 37,15 49,28 C51,30 53,33 54,36 C55,33 57,30 59,28 C71,15 91,22 91,39 C91,63 64,81 54,91 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="7" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M71,46 L71,70 M59,58 L83,58"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="7" />
+</vector>

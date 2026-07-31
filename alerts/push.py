@@ -36,6 +36,8 @@ def _send_android_fcm(device, alert):
                     notification=messaging.AndroidNotification(
                         sound='default',
                         channel_id='briga_vazno',
+                        icon='ic_stat_briga',
+                        color='#0D7A58',
                     ),
                 ),
                 token=device.token,
