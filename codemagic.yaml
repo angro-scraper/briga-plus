@@ -7,8 +7,10 @@ workflows:
       app_store_connect: Sacuvaj Hranu App Store Connect
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: rs.brigaplus.app
+        provisioning_profiles:
+          - briga_plus_app_store_codemagic_v2
+        certificates:
+          - briga_plus_app_store
       vars:
         XCODE_PROJECT: mobile/ios/App/App.xcodeproj
         XCODE_SCHEME: App
