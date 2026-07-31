@@ -59,16 +59,22 @@
 }
 
 html {
+  width: 100%;
+  max-width: 100%;
   min-width: 300px;
+  overflow-x: clip;
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   background: var(--bp-cream);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 12% 4%, rgba(248, 191, 40, .09), transparent 26rem),
     radial-gradient(circle at 96% 26%, rgba(38, 152, 106, .08), transparent 30rem),
@@ -3410,10 +3416,16 @@ body.high-contrast .family-mobile-home button {
 @media (max-width: 820px) {
   html {
     background: var(--bp-cream);
+    overscroll-behavior-x: none;
   }
 
   body {
+    position: relative;
+    max-width: 100%;
+    overflow-x: clip;
     background: var(--bp-cream);
+    overscroll-behavior-x: none;
+    touch-action: pan-y pinch-zoom;
   }
 
   .topbar,
@@ -3458,6 +3470,8 @@ body.high-contrast .family-mobile-home button {
     position: relative;
     display: block;
     min-height: 100svh;
+    max-width: 100%;
+    overflow-x: clip;
     padding: 0 14px calc(102px + env(safe-area-inset-bottom));
     background:
       radial-gradient(circle at 108% 2%, rgba(248, 191, 40, .16), transparent 17rem),
@@ -3975,6 +3989,8 @@ body.high-contrast .family-mobile-home button {
     position: relative;
     display: block;
     min-height: 100svh;
+    max-width: 100%;
+    overflow-x: clip;
     padding: calc(14px + env(safe-area-inset-top)) 14px calc(104px + env(safe-area-inset-bottom));
     background:
       radial-gradient(circle at 110% 8%, rgba(248, 191, 40, .16), transparent 18rem),
@@ -4269,11 +4285,12 @@ body.high-contrast .family-mobile-home button {
   .modal,
   .senior-dialog {
     inset: 0;
-    width: 100vw;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
     height: 100dvh;
     max-height: none;
     margin: 0;
+    overflow-x: clip;
     border-radius: 0;
     padding: 0 0 calc(24px + env(safe-area-inset-bottom));
     background: var(--bp-cream);
