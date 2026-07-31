@@ -48,7 +48,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-care-notifications-20260808")
+        self.assertContains(response, "briga-plus-sos-map-20260809")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -227,7 +227,8 @@ class DashboardFlowTests(TestCase):
             'id="all-tools"', 'data-modal="chat"', 'data-modal="reminders"',
             'data-modal="tasks"', 'data-modal="contacts"', 'data-modal="documents"',
             'data-modal="visits"', 'data-modal="safety"', 'data-modal="devices"',
-            'id="family-mobile-sos"', 'Pošalji GPS lokaciju i pozovi pomoć',
+            'id="family-mobile-sos"', 'SOS za mene',
+            'Šalje moju GPS lokaciju članovima porodice',
         ):
             self.assertContains(family_response, marker)
 
@@ -380,6 +381,29 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(str(sos.longitude), '20.448922')
         self.assertEqual(sos.accuracy_meters, 19)
         self.assertEqual(sos.note, 'Potrebna mi je pomoć.')
+
+    def test_sos_map_links_always_use_dot_decimal_coordinates(self):
+        EmergencyAlert.objects.create(
+            family=self.family,
+            raised_by=self.user,
+            latitude='44.786568',
+            longitude='20.448922',
+            accuracy_meters=19,
+        )
+
+        response = self.client.get('/')
+
+        self.assertContains(response, 'query=44.786568,20.448922')
+        self.assertContains(response, 'destination=44.786568,20.448922')
+        self.assertContains(response, 'q=44.786568,20.448922')
+        self.assertNotContains(response, 'query=44,786568,20,448922')
+
+    def test_family_panel_sos_is_explicitly_for_the_signed_in_member(self):
+        response = self.client.get('/')
+
+        self.assertContains(response, 'SOS za mene')
+        self.assertContains(response, 'Šalje moju GPS lokaciju članovima porodice')
+        self.assertContains(response, 'Šaljete SOS za sebe i GPS lokaciju ovog telefona')
 
     @patch('users.views.send_push_alert', return_value={'native_sent': 1, 'web_sent': 0})
     def test_sos_alert_is_saved_and_pushed_to_every_other_family_member(self, send_push):

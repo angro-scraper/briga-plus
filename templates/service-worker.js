@@ -1,8 +1,8 @@
-const CACHE = 'briga-plus-care-notifications-20260808';
+const CACHE = 'briga-plus-sos-map-20260809';
 const OFFLINE = [
   '/static/briga-v2.css?v=20260808',
   '/static/briga-v2.js?v=20260803',
-  '/static/sos-location.js?v=20260804',
+  '/static/sos-location.js?v=20260809',
   '/static/mobile-enhancements.js?v=20260806',
   '/static/chat-live.js?v=20260807',
   '/static/briga-mark.svg',
