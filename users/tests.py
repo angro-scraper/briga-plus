@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from datetime import datetime
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -14,12 +15,12 @@ from checkins.models import DailyRoutine, HealthLog, RoutineCompletion
 from reminders.models import Reminder
 from caretasks.models import CareTask
 from emergencies.models import EmergencyAlert
-from families.models import CareDocument, CareProfile, EmergencyContact, FamilyInvite, FamilyVisit
+from families.models import CareDevice, CareDocument, CareProfile, EmergencyContact, FamilyInvite, FamilyVisit
 from checkins.models import MoodEntry
 from django.core.files.uploadedfile import SimpleUploadedFile
 from alerts.models import Alert, NativePushDevice
 from alerts.push import send_push_alert
-from messaging.models import Message
+from messaging.models import Message, VoiceMessage
 
 class DashboardFlowTests(TestCase):
     def setUp(self):
@@ -47,7 +48,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-chat-sos-20260805")
+        self.assertContains(response, "briga-plus-e2e-20260806")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -110,14 +111,34 @@ class DashboardFlowTests(TestCase):
             'action': 'message', 'body': 'Dobro sam, vidimo se kasnije.',
         })
 
-        self.assertRedirects(response, '/?open=chat')
+        self.assertRedirects(response, '/moj-dan/?open=chat')
         self.assertTrue(Message.objects.filter(
             family=self.family, sender=senior, body='Dobro sam, vidimo se kasnije.',
         ).exists())
         self.assertTrue(self.user.alerts.filter(kind=Alert.Kind.MESSAGE).exists())
-        response = self.client.get('/?open=chat')
+        response = self.client.get('/moj-dan/?open=chat')
         self.assertContains(response, 'id="chat"')
         self.assertContains(response, 'Dobro sam, vidimo se kasnije.')
+
+    def test_mobile_post_forms_keep_the_open_dialog_after_submit(self):
+        family_response = self.client.get('/')
+        self.assertContains(family_response, "name='return_modal'")
+        self.assertContains(family_response, "dialog.modal form[method=\"post\"]")
+
+        senior = User.objects.create_user('forma_senior', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.force_login(senior)
+        senior_response = self.client.get('/moj-dan/')
+        self.assertContains(senior_response, "name='return_dialog'")
+        self.assertContains(senior_response, "dialog.senior-dialog form[method=\"post\"]")
+
+    def test_both_health_panels_use_only_sophie_narration(self):
+        response = self.client.get('/')
+        self.assertContains(response, '/static/mobile-enhancements.js?v=20260806')
+        script = open('static/mobile-enhancements.js', encoding='utf-8').read()
+        self.assertIn("#read-health-mobile, #read-health", script)
+        self.assertIn("fetch('/sophie-govor/'", script)
+        self.assertIn('Ne prebacujemo na drugi glas.', script)
 
     def test_main_application_routes_are_available_to_a_signed_in_user(self):
         for path in ('/', '/nalog/', '/politika-privatnosti/', '/uslovi-koriscenja/', '/service-worker.js', '/zdravlje/'):
@@ -264,6 +285,15 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(task.assignee, caregiver)
         self.assertIsNotNone(task.due_at)
 
+    def test_mobile_dates_show_serbian_word_u_instead_of_microseconds(self):
+        due_at = timezone.make_aware(datetime(2026, 7, 30, 1, 30, 0, 455049))
+        CareTask.objects.create(family=self.family, title='Proveriti terapiju', due_at=due_at)
+
+        response = self.client.get('/')
+
+        self.assertContains(response, 'Rok: 30.07. u 01:30')
+        self.assertNotContains(response, '455049')
+
     def test_senior_cannot_create_reminder(self):
         senior = User.objects.create_user('jelena2', password='bezbedna-lozinka-123')
         Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
@@ -314,6 +344,20 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(contact.name, 'Ana Petrović')
         self.assertEqual(contact.phone, '+381641234567')
 
+    def test_coordinator_can_delete_emergency_contact(self):
+        contact = EmergencyContact.objects.create(family=self.family, name='Milan', phone='+381641234567')
+        self.client.post('/', {'action': 'contact_delete', 'contact_id': contact.id})
+        self.assertFalse(EmergencyContact.objects.filter(pk=contact.pk).exists())
+
+    def test_coordinator_can_add_future_device_record(self):
+        senior = User.objects.create_user('uredjaj_senior', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.post('/', {
+            'action': 'device', 'name': 'Briga+ narukvica',
+            'device_type': CareDevice.DeviceType.BRACELET, 'serial_number': 'QA-001',
+        })
+        self.assertTrue(CareDevice.objects.filter(user=senior, name='Briga+ narukvica', serial_number='QA-001').exists())
+
     def test_daily_reminder_creates_next_confirmation_slot(self):
         reminder = Reminder.objects.create(user=self.user, title='Terapija', scheduled_for=timezone.now(), repeat_daily=True)
         self.client.post('/', {'action': 'reminder_done', 'reminder_id': reminder.id})
@@ -341,6 +385,24 @@ class DashboardFlowTests(TestCase):
         self.client.force_login(senior)
         self.client.post('/', {'action': 'routine_done', 'routine_id': routine.id})
         self.assertTrue(RoutineCompletion.objects.filter(routine=routine, completed_on=timezone.localdate()).exists())
+
+    def test_daily_routine_defaults_can_be_created_and_a_routine_removed(self):
+        senior = User.objects.create_user('rutina_senior', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.post('/', {'action': 'routine_defaults'})
+        routine = DailyRoutine.objects.get(user=senior, title='Popiti čašu vode')
+        self.client.post('/', {'action': 'routine_delete', 'routine_id': routine.id})
+        routine.refresh_from_db()
+        self.assertFalse(routine.active)
+
+    def test_voice_message_is_saved_and_family_is_notified(self):
+        caregiver = User.objects.create_user('glas_caregiver', password='bezbedna-lozinka-123')
+        Membership.objects.create(user=caregiver, family=self.family, role=Membership.Role.CAREGIVER)
+        audio = SimpleUploadedFile('poruka.webm', b'RIFF-test-audio', content_type='audio/webm')
+        response = self.client.post('/', {'action': 'voice_message', 'audio': audio})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(VoiceMessage.objects.filter(family=self.family, sender=self.user).exists())
+        self.assertTrue(caregiver.alerts.filter(kind=Alert.Kind.MESSAGE).exists())
 
     def test_health_log_and_non_urgent_help_request(self):
         senior = User.objects.create_user('zora', password='bezbedna-lozinka-123')
@@ -521,6 +583,24 @@ class DashboardFlowTests(TestCase):
         response = self.client.post('/nalog/', {'action': 'accept_privacy'})
         self.assertRedirects(response, '/nalog/')
         self.assertTrue(PrivacyConsent.objects.filter(user=self.user).exists())
+
+    def test_user_can_mark_own_alert_as_read(self):
+        alert = Alert.objects.create(recipient=self.user, kind=Alert.Kind.MESSAGE, title='Nova poruka')
+        self.client.post('/', {'action': 'alert_read', 'alert_id': alert.id})
+        alert.refresh_from_db()
+        self.assertIsNotNone(alert.read_at)
+
+    def test_family_admin_can_update_safety_schedule(self):
+        senior = User.objects.create_user('bezbednost_senior', password='bezbedna-lozinka-123')
+        membership = Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        self.client.post('/', {
+            'action': 'safety_settings', 'checkin_due_time': '09:15',
+            'gentle_reminder_minutes': '20', 'alert_after_minutes': '75',
+        })
+        membership.refresh_from_db()
+        self.assertEqual(membership.checkin_due_time.strftime('%H:%M'), '09:15')
+        self.assertEqual(membership.gentle_reminder_minutes, 20)
+        self.assertEqual(membership.alert_after_minutes, 75)
 
     def test_account_deletion_requires_explicit_confirmation(self):
         response = self.client.post('/nalog/', {'action': 'delete_account', 'confirmation': 'ne'})

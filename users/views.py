@@ -673,7 +673,7 @@ def dashboard(request):
             if emergency:
                 emergency.responder_en_route_at, emergency.responder = timezone.now(), request.user
                 emergency.save(update_fields=['responder_en_route_at', 'responder'])
-                notify_user(emergency.raised_by, Alert.Kind.SOS, 'Pomoć je krenula', f'{request.user.first_name or request.user.username} je krenuo/la ka vama.', '/')
+                notify_user(emergency.raised_by, Alert.Kind.SOS, 'Pomoć je krenula', f'{request.user.first_name or request.user.username} je na putu ka vama.', '/')
                 audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f"SOS #{emergency.id}", {'state': 'en_route'})
         elif action == 'sos_resolve' and family and can_coordinate(membership):
             emergency = family.emergencies.filter(pk=request.POST.get('sos_id'), resolved_at__isnull=True).first()
@@ -799,7 +799,11 @@ def senior_dashboard(request):
         return redirect('pocetna')
 
     family = membership.family
+    return_dialog = ''
     if request.method == 'POST':
+        return_dialog = request.POST.get('return_dialog', '')
+        if return_dialog not in {'therapy', 'family-senior', 'chat', 'routine-senior', 'mood-senior', 'health', 'guidance-senior', 'help', 'senior-more'}:
+            return_dialog = ''
         action = request.POST.get('action')
         if action == 'checkin':
             note = request.POST.get('note', '').strip()[:240]
@@ -874,7 +878,7 @@ def senior_dashboard(request):
                     family, request.user, Alert.Kind.MESSAGE,
                     f'Nova poruka od {request.user.username}', body[:180], '/?open=chat',
                 )
-            return redirect('/?open=chat')
+            return redirect('/moj-dan/?open=chat')
         elif action == 'voice_message':
             audio = request.FILES.get('audio')
             if audio and audio.size <= 12 * 1024 * 1024 and audio.content_type.startswith('audio/'):
@@ -886,7 +890,7 @@ def senior_dashboard(request):
                 )
             else:
                 messages.error(request, 'Glasovna poruka mora biti audio zapis manji od 12 MB.')
-            return redirect('/?open=chat')
+            return redirect('/moj-dan/?open=chat')
         elif action == 'sos':
             emergency = EmergencyAlert.objects.create(
                 family=family, raised_by=request.user,
@@ -925,7 +929,7 @@ def senior_dashboard(request):
                 }
                 notify_family(family, request.user, Alert.Kind.NEED_HELP, f'{request.user.username} {labels[kind]}', 'Otvorite Briga+ i javite se osobi.')
                 messages.success(request, 'Porodica je obaveštena.')
-        return redirect('panel_cuvanog_lica')
+        return redirect(f'/moj-dan/?open={return_dialog}' if return_dialog else 'panel_cuvanog_lica')
 
     now = timezone.now()
     routines = list(request.user.daily_routines.filter(active=True))

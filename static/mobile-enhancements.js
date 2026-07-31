@@ -47,7 +47,7 @@
     });
   }
 
-  const speechButton = document.querySelector('#read-health-mobile');
+  const speechButton = document.querySelector('#read-health-mobile, #read-health');
   const cleanSerbianText = value => value.replace(/(\d{2,3})\s*\/\s*(\d{2,3})/g, '$1 kroz $2').replace(/(\d),\s*(\d)/g, '$1 zarez $2').replace(/\s+/g, ' ').trim();
   const waitForSophie = () => new Promise(resolve => {
     const find = () => speechSynthesis.getVoices().find(voice => /sophie/i.test(voice.name) && (/^sr(?:-|_)/i.test(voice.lang) || /serbian|srpski/i.test(voice.name)));
@@ -61,7 +61,10 @@
   if (speechButton) {
     let speaking = false;
     let activeAudio = null;
-    speechButton.addEventListener('click', async () => {
+    speechButton.addEventListener('click', async event => {
+      // Ovaj handler važi za oba panela i zaustavlja stariji lokalni handler
+      // čuvanog lica, kako bi se uvek prvo koristio serverski Sophie glas.
+      event.stopImmediatePropagation();
       if (speaking) {
         if (activeAudio) {
           activeAudio.pause();
@@ -94,7 +97,7 @@
       utterance.onstart = () => { speaking = true; speechButton.textContent = '■ Zaustavi čitanje'; };
       utterance.onend = utterance.onerror = () => { speaking = false; speechButton.textContent = '🔊 Pročitaj poslednje unose — Sophie'; };
       speechSynthesis.cancel(); speechSynthesis.speak(utterance);
-    });
+    }, { capture: true });
   }
 
   const pushButton = document.querySelector('#push-button-mobile');
