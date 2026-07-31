@@ -311,7 +311,7 @@ def health(request):
     return JsonResponse({
         'status': 'ok',
         'application': 'Briga+',
-        'version': '0.6.2',
+        'version': '0.6.3',
         'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
         'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
         'android_app_links_configured': bool(settings.BRIGA_ANDROID_APP_LINK_SHA256),
@@ -547,7 +547,7 @@ def dashboard(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         return_modal = request.POST.get('return_modal', '')
-        if return_modal not in {'chat', 'reminders', 'tasks', 'contacts', 'alerts', 'health', 'safety', 'week', 'family', 'routine', 'profile', 'visits', 'documents', 'mood', 'devices', 'feedback'}:
+        if return_modal not in {'chat', 'reminders', 'tasks', 'contacts', 'alerts', 'sos-detail', 'health', 'safety', 'week', 'family', 'routine', 'profile', 'visits', 'documents', 'mood', 'devices', 'feedback'}:
             return_modal = ''
         if action == 'checkin' and (membership.role == Membership.Role.SENIOR or care_user == request.user):
             note = request.POST.get('note', '').strip()[:240]
@@ -735,7 +735,7 @@ def dashboard(request):
             delivery = notify_family(
                 family, request.user, Alert.Kind.SOS,
                 f'SOS: {request.user.username} traži pomoć',
-                'Otvorite Briga+ za GPS lokaciju i rutu.', '/?open=alerts',
+                'Otvorite Briga+ za GPS lokaciju i rutu.', '/?open=sos-detail',
             )
             audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f'SOS #{emergency.id}', {
                 'state': 'notifications_sent', **delivery,
@@ -1001,7 +1001,7 @@ def senior_dashboard(request):
             delivery = notify_family(
                 family, request.user, Alert.Kind.SOS,
                 f'SOS: {request.user.username} traži pomoć',
-                'Otvorite Briga+ za GPS lokaciju i rutu.', '/?open=alerts',
+                'Otvorite Briga+ za GPS lokaciju i rutu.', '/?open=sos-detail',
             )
             audit(request.user, AuditEvent.Event.SOS_UPDATED, family, f'SOS #{emergency.id}', {
                 'state': 'notifications_sent', **delivery,

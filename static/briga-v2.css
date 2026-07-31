@@ -5312,6 +5312,141 @@ body.high-contrast .family-mobile-home button {
   display: none;
 }
 
+.sos-tool-icon {
+  color: var(--bp-white);
+  background: var(--bp-red-600);
+}
+
+.sos-detail-person {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 20px 14px;
+  border: 1px solid #f2c0bd;
+  border-radius: 18px;
+  padding: 15px;
+  background: linear-gradient(145deg, #fff7f5, #fff);
+}
+
+.sos-detail-person > span {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--bp-red-600);
+  font-size: 1.45rem;
+  font-weight: 950;
+  box-shadow: 0 7px 18px rgba(196, 38, 33, .22);
+}
+
+.sos-detail-person b,
+.sos-detail-person p,
+.sos-detail-person time {
+  display: block;
+}
+
+.sos-detail-person b {
+  color: var(--bp-red-700);
+  font-size: 1.08rem;
+}
+
+.sos-detail-person p {
+  margin: 3px 0;
+  color: var(--bp-green-950);
+}
+
+.sos-detail-person time,
+.sos-detail-accuracy {
+  color: var(--bp-muted);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.sos-detail-map {
+  display: block;
+  width: calc(100% - 40px);
+  height: min(42vh, 330px);
+  margin: 0 20px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--bp-green-50);
+  box-shadow: var(--bp-shadow-xs);
+}
+
+.sos-detail-accuracy,
+.sos-detail-state {
+  margin: 10px 20px;
+}
+
+.sos-detail-state,
+.sos-location-missing {
+  border-radius: 14px;
+  padding: 13px 15px;
+  color: #704f00;
+  background: var(--bp-gold-100);
+  font-weight: 800;
+}
+
+.sos-location-missing {
+  margin: 0 20px 14px;
+}
+
+.sos-location-missing p {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+.sos-detail-links,
+.sos-detail-response {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 12px 20px;
+}
+
+.sos-detail-response {
+  margin-bottom: 22px;
+}
+
+.sos-detail-response form,
+.sos-detail-response button,
+.sos-detail-links .button {
+  width: 100%;
+}
+
+.sos-finished {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 24px 20px;
+  padding: 38px 20px;
+  text-align: center;
+}
+
+.sos-finished > span {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--bp-green-600);
+  font-size: 1.7rem;
+}
+
+.sos-finished h3,
+.sos-finished p {
+  margin: 0;
+}
+
+.sos-finished p {
+  max-width: 410px;
+  color: var(--bp-muted);
+}
+
 /* Helpful color cues on the secondary senior cards. */
 .senior-open-card.health-card > span {
   color: var(--bp-red-600);
@@ -5410,6 +5545,11 @@ body.high-contrast .family-mobile-home button {
 }
 
 @media (max-width: 520px) {
+  .sos-detail-links,
+  .sos-detail-response {
+    grid-template-columns: 1fr;
+  }
+
   .item-list article,
   .item-list article:has(> .medicine-photo) {
     grid-template-columns: auto minmax(0, 1fr) auto;

@@ -1,6 +1,6 @@
-const CACHE = 'briga-plus-senior-sos-one-tap-20260813';
+const CACHE = 'briga-plus-sos-detail-screen-20260814';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260813',
+  '/static/briga-v2.css?v=20260814',
   '/static/briga-v2.js?v=20260803',
   '/static/sos-location.js?v=20260813',
   '/static/mobile-enhancements.js?v=20260806',

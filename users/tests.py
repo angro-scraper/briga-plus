@@ -43,13 +43,13 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.2')
+        self.assertEqual(response.json()['version'], '0.6.3')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-senior-sos-one-tap-20260813")
+        self.assertContains(response, "briga-plus-sos-detail-screen-20260814")
         self.assertContains(response, "/static/sos-location.js?v=20260813")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
@@ -72,7 +72,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260813')
+        self.assertContains(response, '/static/briga-v2.css?v=20260814')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
 
     def test_family_mobile_header_identifies_the_person_receiving_care(self):
@@ -107,6 +107,29 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, "target.startsWith('/')&&!target.startsWith('//')")
         self.assertContains(response, "destination.searchParams.get('open')")
         self.assertContains(response, 'targetModal.showModal()')
+
+    def test_old_and_new_sos_notifications_open_the_dedicated_sos_screen(self):
+        senior = User.objects.create_user(
+            'sos_lokacija', first_name='Milena', password='bezbedna-lozinka-123',
+        )
+        Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
+        EmergencyAlert.objects.create(
+            family=self.family, raised_by=senior,
+            latitude='44.786568', longitude='20.448922', accuracy_meters=18,
+        )
+        Alert.objects.create(
+            recipient=self.user, kind=Alert.Kind.SOS, title='SOS: Milena traži pomoć',
+            body='Otvorite GPS lokaciju i rutu.', url='/?open=alerts',
+        )
+
+        response = self.client.get('/')
+
+        self.assertContains(response, 'data-notification-kind="sos"')
+        self.assertContains(response, 'id="sos-detail"')
+        self.assertContains(response, 'Otvori SOS lokaciju i odgovor')
+        self.assertContains(response, "isSos?'/?open=sos-detail':storedTarget")
+        self.assertContains(response, 'query=44.786568,20.448922', count=2)
+        self.assertContains(response, 'destination=44.786568,20.448922', count=2)
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
         caregiver = User.objects.create_user('ana_chat', password='bezbedna-lozinka-123')
@@ -444,7 +467,7 @@ class DashboardFlowTests(TestCase):
 
         alerts = Alert.objects.filter(kind=Alert.Kind.SOS).order_by('recipient_id')
         self.assertEqual(set(alerts.values_list('recipient_id', flat=True)), {caregiver.id, senior.id})
-        self.assertTrue(all(alert.url == '/?open=alerts' for alert in alerts))
+        self.assertTrue(all(alert.url == '/?open=sos-detail' for alert in alerts))
         self.assertEqual(send_push.call_count, 2)
         delivery_audit = AuditEvent.objects.get(event=AuditEvent.Event.SOS_UPDATED)
         self.assertEqual(delivery_audit.detail['recipients'], 2)
