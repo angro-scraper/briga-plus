@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0d553d">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260731">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801">
   <title>Briga+ | Porodični panel</title>
 </head>
 <body class="family-dashboard-page {% if membership.role == 'senior' %}senior-account{% elif not has_health_access %}basic-family-account{% endif %}">
@@ -50,6 +50,17 @@
         <b class="family-avatar">{{ user.first_name|default:user.username|slice:":1" }}</b>
       </div>
     </header>
+    <form class="family-mobile-sos" id="family-mobile-sos" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="sos">
+      <input type="hidden" name="latitude">
+      <input type="hidden" name="longitude">
+      <button id="family-mobile-sos-button" type="submit">
+        <span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span>
+        <div><b>SOS</b><small>Pošalji GPS lokaciju i pozovi pomoć</small></div>
+      </button>
+      <p id="family-mobile-sos-status" aria-live="polite"></p>
+    </form>
     <article class="family-mobile-status">
       <span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#check-circle"></use></svg></span>
       <div><b>{% if last_checkin %}Danas je sve u redu{% else %}Čekamo jutarnju prijavu{% endif %}</b><p>{% if last_checkin %}{{ care_person.first_name|default:care_person.username }} se javio/la i potvrdio/la da je dobro.{% else %}Pošaljite blag podsetnik jednim dodirom.{% endif %}</p><button type="button" data-modal="week">Pogledaj detalje <i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></div>
@@ -199,8 +210,35 @@
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js');
 const weekDetailLabels={checkins:['Potvrde „Dobro sam”','Sve dnevne potvrde iz poslednjih sedam dana.'],taken:['Potvrđene terapije i pregledi','Sve stavke koje su označene kao obavljene.'],missed:['Propuštene stavke','Podsetnici koji su dospeli, a još nisu potvrđeni.'],upcoming:['Dolazeći podsetnici','Terapije, pregledi i obaveze koje slede u narednih sedam dana.'],open_tasks:['Otvoreni zadaci','Porodične obaveze koje još nisu završene.'],overdue_tasks:['Zadaci sa isteklim rokom','Obaveze kojima je istekao rok i zahtevaju pažnju.']}; document.querySelectorAll('[data-modal]').forEach(button => button.addEventListener('click', () => { const modal=document.getElementById(button.dataset.modal); if(!modal)return; if(button.dataset.weekSection){const section=button.dataset.weekSection,label=weekDetailLabels[section]; document.querySelectorAll('[data-week-detail]').forEach(item=>item.hidden=item.dataset.weekDetail!==section); document.querySelector('#week-detail-title').textContent=label[0];document.querySelector('#week-detail-lead').textContent=label[1];} const parent=button.closest('dialog[open]'); if(parent&&parent!==modal)parent.close(); modal.showModal();}));
 document.querySelectorAll('.modal').forEach(modal => { modal.querySelector('.modal-close').addEventListener('click', () => modal.close()); modal.addEventListener('click', event => { if (event.target === modal) modal.close(); }); });
-const sosForm = document.querySelector('#sos'), sosButton = document.querySelector('#sos-button'), sosStatus = document.querySelector('#sos-status');
-sosForm.addEventListener('submit', event => { if (sosForm.dataset.locationReady === 'true') return; event.preventDefault(); if (!confirm('Da li želite da pošaljete SOS porodici?')) return; sosButton.disabled = true; sosButton.textContent = 'Učitavamo GPS lokaciju…'; sosStatus.textContent = 'Tražimo preciznu lokaciju uređaja. Odobrite dozvolu ako je zatražena.'; const sendSos = message => { sosStatus.textContent = message; sosForm.dataset.locationReady = 'true'; sosForm.submit(); }; if (!navigator.geolocation) { sendSos('Uređaj ne podržava GPS. SOS se šalje bez lokacije.'); return; } navigator.geolocation.getCurrentPosition(position => { sosForm.latitude.value = position.coords.latitude; sosForm.longitude.value = position.coords.longitude; sendSos('GPS lokacija je učitana. Šaljemo SOS…'); }, () => sendSos('GPS nije dostupan. SOS se šalje bez lokacije.'), { enableHighAccuracy:true, timeout:12000, maximumAge:0 }); });
+document.querySelectorAll('#sos,#family-mobile-sos').forEach(sosForm => sosForm.addEventListener('submit', event => {
+  if (sosForm.dataset.locationReady === 'true') return;
+  event.preventDefault();
+  if (!confirm('Da li želite da pošaljete SOS porodici?')) return;
+  const sosButton = sosForm.querySelector('button[type="submit"]');
+  const sosStatus = sosForm.querySelector('[aria-live]');
+  sosButton.disabled = true;
+  sosButton.dataset.originalLabel = sosButton.innerHTML;
+  sosButton.textContent = 'Učitavamo GPS lokaciju…';
+  if (sosStatus) sosStatus.textContent = 'Tražimo preciznu lokaciju uređaja. Odobrite dozvolu ako je zatražena.';
+  const sendSos = message => {
+    if (sosStatus) sosStatus.textContent = message;
+    sosForm.dataset.locationReady = 'true';
+    sosForm.submit();
+  };
+  if (!navigator.geolocation) {
+    sendSos('Uređaj ne podržava GPS. SOS se šalje bez lokacije.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(position => {
+    sosForm.elements.latitude.value = position.coords.latitude;
+    sosForm.elements.longitude.value = position.coords.longitude;
+    sendSos('GPS lokacija je učitana. Šaljemo SOS…');
+  }, () => sendSos('GPS nije dostupan. SOS se šalje bez lokacije.'), {
+    enableHighAccuracy: true,
+    timeout: 12000,
+    maximumAge: 0,
+  });
+}));
 const seniorToggle = document.querySelector('#senior-mode-toggle'); const setLargeMode = enabled => { document.body.classList.toggle('large-mode', enabled); seniorToggle.textContent = enabled ? 'Standardni prikaz' : 'Veći prikaz'; localStorage.setItem('briga-large-mode', enabled ? '1' : '0'); }; setLargeMode(localStorage.getItem('briga-large-mode') === '1'); seniorToggle.addEventListener('click', () => setLargeMode(!document.body.classList.contains('large-mode')));
 const voiceButton = document.querySelector('#voice-button'), voiceStatus = document.querySelector('#voice-status'); let recorder, chunks=[]; if (voiceButton) voiceButton.addEventListener('click', async () => { if (recorder && recorder.state === 'recording') { recorder.stop(); return; } if (!navigator.mediaDevices || !window.MediaRecorder) { voiceStatus.textContent='Snimanje glasa nije podržano u ovom pregledniku.'; return; } try { const stream=await navigator.mediaDevices.getUserMedia({audio:true}); chunks=[]; recorder=new MediaRecorder(stream); recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data)}; recorder.onstart=()=>{voiceButton.textContent='■ Završi snimanje';voiceStatus.textContent='Snimanje je u toku…'}; recorder.onstop=async()=>{stream.getTracks().forEach(track=>track.stop());voiceButton.disabled=true;voiceStatus.textContent='Šaljemo glasovnu poruku…';const formData=new FormData();formData.append('action','voice_message');formData.append('audio',new Blob(chunks,{type:recorder.mimeType||'audio/webm'}),'glasovna-poruka.webm');formData.append('csrfmiddlewaretoken',document.querySelector('input[name=csrfmiddlewaretoken]').value);await fetch('/',{method:'POST',body:formData});window.location.reload()}; recorder.start(); } catch (_) { voiceStatus.textContent='Mikrofon nije dostupan. Proverite dozvolu uređaja.'; } });
 const pushButton=document.querySelector('#push-button'),pushStatus=document.querySelector('#push-status'),pushPublicKey='{{ push_public_key|escapejs }}',toUint8Array=value=>{const padding='='.repeat((4-value.length%4)%4),base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(base64),character=>character.charCodeAt(0));}; if(pushButton)pushButton.addEventListener('click',async()=>{try{if(!('serviceWorker'in navigator)||!('PushManager'in window))throw new Error('Ovaj preglednik ne podržava push obaveštenja.');const permission=await Notification.requestPermission();if(permission!=='granted')throw new Error('Dozvola za obaveštenja nije data.');const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:toUint8Array(pushPublicKey)}),response=await fetch('/push-pretplata/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('input[name=csrfmiddlewaretoken]').value},body:JSON.stringify(subscription)}),result=await response.json();if(!result.ok)throw new Error(result.error||'Pretplata nije uspela.');pushButton.disabled=true;pushStatus.textContent='Obaveštenja su uključena na ovom uređaju.'}catch(error){pushStatus.textContent=error.message||'Pretplata nije uspela.'}});
@@ -224,6 +262,6 @@ const readHealth=document.querySelector('#read-health'); let healthSpeechActive=
     }
   })();
 </script>
-  <script src="/static/briga-v2.js?v=20260731"></script>
+  <script src="/static/briga-v2.js?v=20260801"></script>
 </body>
 </html>

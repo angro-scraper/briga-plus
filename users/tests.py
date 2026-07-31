@@ -46,7 +46,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-sve-funkcije-20260731")
+        self.assertContains(response, "briga-plus-mobile-polish-20260801")
         self.assertContains(response, 'self.skipWaiting()')
 
     def test_sophie_speech_requires_configured_service(self):
@@ -66,8 +66,8 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260731')
-        self.assertContains(response, '/static/briga-v2.js?v=20260731')
+        self.assertContains(response, '/static/briga-v2.css?v=20260801')
+        self.assertContains(response, '/static/briga-v2.js?v=20260801')
 
     def test_chat_message_stays_open_and_notifies_another_family_member(self):
         caregiver = User.objects.create_user('ana_chat', password='bezbedna-lozinka-123')
@@ -112,6 +112,7 @@ class DashboardFlowTests(TestCase):
             'id="all-tools"', 'data-modal="chat"', 'data-modal="reminders"',
             'data-modal="tasks"', 'data-modal="contacts"', 'data-modal="documents"',
             'data-modal="visits"', 'data-modal="safety"', 'data-modal="devices"',
+            'id="family-mobile-sos"', 'Pošalji GPS lokaciju i pozovi pomoć',
         ):
             self.assertContains(family_response, marker)
 

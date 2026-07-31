@@ -3458,22 +3458,22 @@ body.high-contrast .family-mobile-home button {
     position: relative;
     display: block;
     min-height: 100svh;
-    padding: 0 13px calc(102px + env(safe-area-inset-bottom));
+    padding: 0 14px calc(102px + env(safe-area-inset-bottom));
     background:
-      radial-gradient(circle at 110% 0, rgba(248, 191, 40, .18), transparent 18rem),
-      var(--bp-cream);
+      radial-gradient(circle at 108% 2%, rgba(248, 191, 40, .16), transparent 17rem),
+      linear-gradient(180deg, #f8faf7 0, var(--bp-cream) 42%);
   }
 
   .family-mobile-home > header {
     position: relative;
     display: flex;
-    min-height: 144px;
+    min-height: 126px;
     align-items: flex-start;
     justify-content: space-between;
     gap: 15px;
-    margin: 0 -13px 12px;
+    margin: 0 -14px 12px;
     overflow: hidden;
-    padding: calc(23px + env(safe-area-inset-top)) 18px 34px;
+    padding: calc(22px + env(safe-area-inset-top)) 18px 30px;
     color: var(--bp-white);
     background:
       radial-gradient(circle at 90% 10%, rgba(248, 191, 40, .18), transparent 11rem),
@@ -3558,6 +3558,78 @@ body.high-contrast .family-mobile-home button {
     box-shadow: 0 4px 12px rgba(0, 0, 0, .16);
   }
 
+  .family-mobile-sos {
+    position: relative;
+    z-index: 3;
+    margin: -25px 0 11px;
+  }
+
+  .family-mobile-sos > button {
+    display: grid;
+    width: 100%;
+    min-height: 82px;
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    border: 0;
+    border-radius: 21px;
+    padding: 12px 18px;
+    color: var(--bp-white);
+    background:
+      radial-gradient(circle at 50% -30%, rgba(255, 255, 255, .27), transparent 9rem),
+      linear-gradient(155deg, #f43b32, #ca1715);
+    box-shadow: 0 13px 27px rgba(196, 31, 28, .26), inset 0 1px 0 rgba(255, 255, 255, .32);
+    text-align: left;
+    touch-action: manipulation;
+  }
+
+  .family-mobile-sos > button:active {
+    transform: scale(.985);
+  }
+
+  .family-mobile-sos > button > span {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16);
+  }
+
+  .family-mobile-sos .ui-icon {
+    width: 31px;
+    height: 31px;
+    stroke-width: 2.3;
+  }
+
+  .family-mobile-sos b,
+  .family-mobile-sos small {
+    display: block;
+    color: var(--bp-white);
+  }
+
+  .family-mobile-sos b {
+    font-size: 1.85rem;
+    line-height: 1;
+    letter-spacing: .02em;
+  }
+
+  .family-mobile-sos small {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, .92);
+    font-size: .78rem;
+    font-weight: 760;
+  }
+
+  .family-mobile-sos > p {
+    margin: 6px 5px 0;
+    color: var(--bp-red-700);
+    font-size: .72rem;
+    font-weight: 750;
+  }
+
   .family-mobile-status {
     position: relative;
     z-index: 2;
@@ -3565,12 +3637,12 @@ body.high-contrast .family-mobile-home button {
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: start;
     gap: 12px;
-    margin-top: -34px;
+    margin-top: 0;
     border: 1px solid var(--bp-border);
-    border-radius: 20px;
+    border-radius: 21px;
     padding: 16px 14px;
     background: var(--bp-paper);
-    box-shadow: var(--bp-shadow-md);
+    box-shadow: 0 10px 26px rgba(14, 67, 50, .09);
   }
 
   .family-mobile-status > span {
@@ -3638,35 +3710,41 @@ body.high-contrast .family-mobile-home button {
   }
 
   .family-mobile-home > h2 {
-    margin: 17px 3px 9px;
-    font-size: 1rem;
+    margin: 19px 3px 10px;
+    font-size: 1.04rem;
     letter-spacing: -.015em;
   }
 
   .family-mobile-stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 7px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
   }
 
   .family-mobile-stats button {
     display: grid;
     min-width: 0;
-    min-height: 123px;
+    min-height: 92px;
+    grid-template-columns: 43px minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-content: center;
-    justify-items: center;
+    align-items: center;
+    justify-items: start;
+    gap: 1px 10px;
     border: 1px solid var(--bp-border);
-    border-radius: 15px;
-    padding: 9px 4px;
+    border-radius: 17px;
+    padding: 12px;
     background: var(--bp-paper);
-    box-shadow: var(--bp-shadow-xs);
+    box-shadow: 0 5px 16px rgba(11, 53, 42, .06);
+    text-align: left;
   }
 
   .family-mobile-stats button > span {
     display: grid;
-    width: 34px;
-    height: 34px;
-    margin-bottom: 7px;
+    width: 43px;
+    height: 43px;
+    grid-row: 1 / span 2;
+    margin: 0;
     place-items: center;
     border-radius: 11px;
     color: var(--bp-green-700);
@@ -3695,7 +3773,8 @@ body.high-contrast .family-mobile-home button {
 
   .family-mobile-stats b {
     display: block;
-    margin-bottom: 4px;
+    align-self: end;
+    margin: 0;
     color: var(--bp-ink);
     font-size: 1.5rem;
     line-height: 1;
@@ -3703,11 +3782,12 @@ body.high-contrast .family-mobile-home button {
 
   .family-mobile-stats small {
     display: block;
-    max-width: 72px;
+    align-self: start;
+    max-width: none;
     color: var(--bp-ink-2);
     font-size: .68rem;
     line-height: 1.22;
-    text-align: center;
+    text-align: left;
   }
 
   .family-mobile-tasks {
@@ -3723,8 +3803,8 @@ body.high-contrast .family-mobile-home button {
     width: 100%;
     min-height: 69px;
     border: 1px solid var(--bp-border);
-    border-radius: 15px;
-    padding: 10px 12px;
+    border-radius: 17px;
+    padding: 11px 13px;
     background: var(--bp-paper);
     box-shadow: var(--bp-shadow-xs);
     text-align: left;
@@ -3775,11 +3855,13 @@ body.high-contrast .family-mobile-home button {
     gap: 12px;
     margin-top: 13px;
     border: 1px solid var(--bp-green-200);
-    border-radius: 18px;
+    border-radius: 19px;
     padding: 12px;
     color: var(--bp-ink);
-    background: linear-gradient(135deg, var(--bp-green-50), var(--bp-white));
-    box-shadow: var(--bp-shadow-xs);
+    background:
+      radial-gradient(circle at 100% 0, rgba(248, 191, 40, .12), transparent 7rem),
+      linear-gradient(135deg, var(--bp-green-50), var(--bp-white));
+    box-shadow: 0 7px 20px rgba(11, 53, 42, .07);
     text-align: left;
   }
 
@@ -3824,11 +3906,11 @@ body.high-contrast .family-mobile-home button {
     left: 0;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    min-height: calc(74px + env(safe-area-inset-bottom));
+    min-height: calc(70px + env(safe-area-inset-bottom));
     border-top: 1px solid rgba(212, 204, 190, .9);
     padding: 7px 7px env(safe-area-inset-bottom);
     background: rgba(255, 253, 249, .97);
-    box-shadow: 0 -8px 24px rgba(11, 53, 42, .07);
+    box-shadow: 0 -9px 27px rgba(11, 53, 42, .09);
     backdrop-filter: blur(15px);
   }
 
@@ -3893,29 +3975,28 @@ body.high-contrast .family-mobile-home button {
     position: relative;
     display: block;
     min-height: 100svh;
-    padding: calc(14px + env(safe-area-inset-top)) 13px calc(104px + env(safe-area-inset-bottom));
+    padding: calc(14px + env(safe-area-inset-top)) 14px calc(104px + env(safe-area-inset-bottom));
     background:
       radial-gradient(circle at 110% 8%, rgba(248, 191, 40, .16), transparent 18rem),
-      var(--bp-cream);
+      linear-gradient(180deg, #f9faf7 0, var(--bp-cream) 42%);
   }
 
   .picture-top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: stretch;
-    gap: 8px;
+    position: relative;
+    display: block;
     margin-bottom: 14px;
   }
 
   .picture-sos button {
     display: flex;
     width: 100%;
-    min-height: 83px;
+    min-height: 92px;
     align-items: center;
     justify-content: center;
     gap: 13px;
     border: 0;
-    border-radius: 19px;
+    border-radius: 22px;
+    padding: 12px 62px 12px 18px;
     color: var(--bp-white);
     background:
       radial-gradient(circle at 50% -20%, rgba(255, 255, 255, .22), transparent 8rem),
@@ -3957,12 +4038,17 @@ body.high-contrast .family-mobile-home button {
   }
 
   .picture-text-toggle {
-    width: 51px;
-    border: 1px solid var(--bp-border);
-    border-radius: 17px;
-    color: var(--bp-green-800);
-    background: var(--bp-paper);
-    box-shadow: var(--bp-shadow-xs);
+    position: absolute;
+    z-index: 2;
+    top: 11px;
+    right: 10px;
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(255, 255, 255, .5);
+    border-radius: 15px;
+    color: #9f1513;
+    background: rgba(255, 255, 255, .93);
+    box-shadow: 0 6px 15px rgba(104, 10, 8, .17);
     font-size: .98rem;
     font-weight: 950;
   }
@@ -3972,7 +4058,7 @@ body.high-contrast .family-mobile-home button {
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 11px;
-    min-height: 140px;
+    min-height: 126px;
     margin-bottom: 11px;
     overflow: hidden;
     border: 1px solid #e1d5bd;
@@ -3981,7 +4067,7 @@ body.high-contrast .family-mobile-home button {
     background:
       radial-gradient(circle at 8% 15%, rgba(248, 191, 40, .12), transparent 8rem),
       var(--bp-paper);
-    box-shadow: var(--bp-shadow-sm);
+    box-shadow: 0 8px 24px rgba(11, 53, 42, .08);
   }
 
   .picture-greeting > span {
@@ -4033,14 +4119,14 @@ body.high-contrast .family-mobile-home button {
     align-items: center;
     gap: 12px;
     width: 100%;
-    min-height: 91px;
+    min-height: 88px;
     margin: 0 0 9px;
     border: 1px solid var(--bp-border);
     border-radius: 18px;
     padding: 11px 13px;
     color: var(--bp-ink);
     background: var(--bp-paper);
-    box-shadow: var(--bp-shadow-sm);
+    box-shadow: 0 6px 18px rgba(11, 53, 42, .07);
     text-align: left;
   }
 
@@ -4055,7 +4141,7 @@ body.high-contrast .family-mobile-home button {
     align-items: center;
     gap: 12px;
     width: 100%;
-    min-height: 89px;
+    min-height: 86px;
     border: 0;
     border-radius: inherit;
     padding: 11px 13px;
@@ -4520,11 +4606,11 @@ body.high-contrast .family-mobile-home button {
   }
 
   .family-mobile-stats {
-    gap: 5px;
+    gap: 9px;
   }
 
   .family-mobile-stats button {
-    min-height: 116px;
+    min-height: 92px;
   }
 
   .picture-greeting > span {
@@ -4586,7 +4672,7 @@ body.high-contrast .family-mobile-home button {
   }
 
   .family-mobile-stats button {
-    min-height: 108px;
+    min-height: 86px;
   }
 
   .family-mobile-stats b {
