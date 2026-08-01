@@ -2,7 +2,7 @@
 <html lang="sr">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4A6741">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d1"><title>Briga+ | Jednostavno</title>
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d2"><title>Briga+ | Jednostavno</title>
 </head>
 <body class="easy-page">
 <header class="easy-top"><a href="/" class="easy-brand"><img src="/static/briga-mark.svg" alt="Briga+">Briga<span>+</span></a><a href="/" class="easy-link">Moj panel</a></header>
@@ -19,6 +19,7 @@
   <section class="easy-section"><h2>Kako se osećate?</h2><div class="easy-moods"><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="good"><button class="mood-good">☺ Dobro</button></form><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="tired"><button class="mood-tired">◔ Umorno</button></form><form method="post" action="/"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="mood"><input type="hidden" name="mood" value="low"><button class="mood-low">☹ Loše</button></form></div>{% if mood_today %}<p class="easy-note">Današnji izbor: {{ mood_today.get_mood_display }}</p>{% endif %}</section>
   <section class="easy-section easy-contact"><h2>Porodica je tu</h2>{% if next_visit %}<p>Sledeća poseta: <b>{{ next_visit.visitor.first_name|default:next_visit.visitor.username }}</b>, {{ next_visit.scheduled_for|date:"d.m." }} u {{ next_visit.scheduled_for|date:"H:i" }}.</p>{% endif %}<div>{% for contact in contacts|slice:":2" %}<a href="tel:{{ contact.phone|urlencode }}">☎ Pozovi {{ contact.name }}</a>{% empty %}<p>Dodajte hitni kontakt u porodičnom panelu.</p>{% endfor %}</div></section>
 </main>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20260801d2').then(registration => registration.update());</script>
 <script defer src="/static/sos-location.js?v=20260801d1"></script>
   <script defer src="/static/deep-links.js?v=20260803"></script><script defer src="/static/briga-v2.js?v=20260803"></script>
 </body></html>
