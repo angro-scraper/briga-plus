@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#4A6741">
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="preload" as="image" href="/static/illustrations/family-care-hero.webp" type="image/webp">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d2">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d3">
   <title>Briga+ | Moj dan</title>
 </head>
 <body class="senior-panel-page" data-user-id="{{ user.id }}">
@@ -153,7 +153,7 @@
     const requestedDialog=new URLSearchParams(window.location.search).get('open');if(requestedDialog&&document.getElementById(requestedDialog)?.showModal){const dialog=document.getElementById(requestedDialog);dialog.showModal();prepareDialog(dialog)}
     document.querySelectorAll('.senior-back').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
   </script>
-  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20260801d2').then(registration => registration.update());</script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20260801d3').then(registration => registration.update());</script>
   <script defer src="/static/sos-location.js?v=20260801d1"></script>
   <script defer src="/static/mobile-enhancements.js?v=20260816"></script>
   <script defer src="/static/chat-live.js?v=20260807"></script>

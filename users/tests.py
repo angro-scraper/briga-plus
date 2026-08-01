@@ -43,13 +43,13 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.7')
+        self.assertEqual(response.json()['version'], '0.6.8')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-theme-refresh-20260801d2")
+        self.assertContains(response, "briga-plus-theme-refresh-20260801d3")
         self.assertContains(response, "/static/sos-location.js?v=20260801d1")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
@@ -75,7 +75,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260801d2')
+        self.assertContains(response, '/static/briga-v2.css?v=20260801d3')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
         self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')

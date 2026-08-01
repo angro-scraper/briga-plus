@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#4A6741">
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="preload" as="image" href="/static/illustrations/family-care-hero.webp" type="image/webp">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d2">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d3">
   <title>Briga+ | Porodični panel</title>
 </head>
 <body class="family-dashboard-page {% if membership.role == 'senior' %}senior-account{% elif not has_health_access %}basic-family-account{% endif %}" data-user-id="{{ user.id }}">
@@ -248,7 +248,7 @@
 <dialog class="modal" id="feedback"><div class="modal-head"><div><span class="tool-icon">✦</span><div><p class="eyebrow">BRIGA+ PILOT</p><h2>Kako vam radi Briga+?</h2></div></div><button class="modal-close" type="button" aria-label="Zatvori">×</button></div><p class="modal-lead">Kratko nam napišite šta je jasno, a šta treba popraviti. Poruku vidi samo Briga+ pilot tim.</p><form method="post" class="modal-form">{% csrf_token %}<input type="hidden" name="action" value="pilot_feedback"><div class="form-columns"><label>Tema<select name="category"><option value="ease">Lakše korišćenje</option><option value="notification">Obaveštenja</option><option value="sos">SOS i bezbednost</option><option value="issue">Problem u radu</option><option value="idea">Predlog</option></select></label><label>Ocena<select name="rating"><option value="good">Dobro radi</option><option value="ok">Može bolje</option><option value="bad">Ne radi kako treba</option></select></label></div><label>Vaša poruka<textarea name="message" maxlength="800" required placeholder="Npr. dugme je premalo, podsetnik nije stigao ili imam predlog…"></textarea></label><button class="button primary">Pošalji pilot timu</button></form></dialog>
 
 <script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20260801d2').then(registration => registration.update());
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20260801d3').then(registration => registration.update());
 const weekDetailLabels={checkins:['Potvrde „Dobro sam”','Sve dnevne potvrde iz poslednjih sedam dana.'],taken:['Potvrđene terapije i pregledi','Sve stavke koje su označene kao obavljene.'],missed:['Propuštene stavke','Podsetnici koji su dospeli, a još nisu potvrđeni.'],upcoming:['Dolazeći podsetnici','Terapije, pregledi i obaveze koje slede u narednih sedam dana.'],open_tasks:['Otvoreni zadaci','Porodične obaveze koje još nisu završene.'],overdue_tasks:['Zadaci sa isteklim rokom','Obaveze kojima je istekao rok i zahtevaju pažnju.']};
 document.querySelectorAll('dialog.modal form[method="post"]').forEach(form=>{if(form.querySelector('[name="return_modal"]'))return;const input=document.createElement('input');input.type='hidden';input.name='return_modal';input.value=form.closest('dialog').id;form.appendChild(input)});
 const safetyExplanation=document.querySelector('#safety .push-box p');if(safetyExplanation)safetyExplanation.textContent='Automatska provera radi na svakih pet minuta. Najpre stiže nežan podsetnik, a zatim porodično upozorenje prema ovom rasporedu.';

@@ -5308,10 +5308,27 @@ body.high-contrast .family-mobile-home button {
   }
 
   .family-mobile-home > header {
+    min-height: 260px;
     margin-right: -28px;
     margin-left: -28px;
     padding-right: 34px;
     padding-left: 34px;
+  }
+
+  .family-mobile-home > header::before {
+    background: linear-gradient(90deg, #344d2f 0%, rgba(52, 77, 47, .97) 38%, rgba(52, 77, 47, .48) 62%, rgba(52, 77, 47, .08) 100%);
+  }
+
+  .family-mobile-home > header .family-care-hero-image {
+    right: 0;
+    left: auto;
+    width: 64%;
+    object-position: center 30%;
+  }
+
+  .family-care-heading {
+    max-width: 42%;
+    padding-top: 12px;
   }
 
   .family-mobile-home > nav,
