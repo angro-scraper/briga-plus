@@ -1,8 +1,8 @@
-const CACHE = 'briga-plus-instant-senior-start-20260816';
+const CACHE = 'briga-plus-theme-refresh-20260801d1';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260815',
+  '/static/briga-v2.css?v=20260801d1',
   '/static/briga-v2.js?v=20260803',
-  '/static/sos-location.js?v=20260813',
+  '/static/sos-location.js?v=20260801d1',
   '/static/mobile-enhancements.js?v=20260816',
   '/static/chat-live.js?v=20260807',
   '/static/deep-links.js?v=20260803',

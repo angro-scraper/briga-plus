@@ -43,14 +43,14 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.5')
+        self.assertEqual(response.json()['version'], '0.6.6')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-instant-senior-start-20260816")
-        self.assertContains(response, "/static/sos-location.js?v=20260813")
+        self.assertContains(response, "briga-plus-theme-refresh-20260801d1")
+        self.assertContains(response, "/static/sos-location.js?v=20260801d1")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
         self.assertContains(response, 'self.skipWaiting()')
@@ -75,7 +75,7 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260815')
+        self.assertContains(response, '/static/briga-v2.css?v=20260801d1')
         self.assertContains(response, '/static/briga-v2.js?v=20260803')
         self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
@@ -461,7 +461,7 @@ class DashboardFlowTests(TestCase):
 
         self.assertContains(response, 'SOS za mene')
         self.assertContains(response, 'Šalje moju GPS lokaciju članovima porodice')
-        self.assertContains(response, 'Šaljete SOS za sebe i GPS lokaciju ovog telefona')
+        self.assertContains(response, 'data-sos-overlay="true"')
 
     @patch('users.views.send_push_alert', return_value={'native_sent': 1, 'web_sent': 0})
     def test_sos_alert_is_saved_and_pushed_to_every_other_family_member(self, send_push):
@@ -657,9 +657,14 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, 'id="family-senior"')
         self.assertContains(response, 'data-dialog="family-senior"')
         self.assertContains(response, 'id="picture-sos"')
-        self.assertContains(response, 'data-send-immediately="true"', count=2)
+        self.assertContains(response, 'data-sos-overlay="true"')
+        self.assertContains(response, 'class="sophie-halo"')
+        self.assertContains(response, 'class="senior-primary-grid"')
+        self.assertContains(response, '<span>Dan</span>')
+        self.assertContains(response, '<span>Lekovi</span>')
+        self.assertContains(response, '<span>Pomoć</span>')
         self.assertNotContains(response, 'id="picture-text-toggle"')
-        self.assertContains(response, 'Jedan dodir odmah šalje pomoć')
+        self.assertContains(response, 'Pošalji SOS i GPS lokaciju')
         self.assertContains(response, 'class="picture-greeting picture-care-hero"')
         self.assertContains(response, '/static/illustrations/family-care-hero.webp', count=2)
         self.assertContains(response, 'fetchpriority="high"')

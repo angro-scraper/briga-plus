@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0d553d">
+  <meta name="theme-color" content="#4A6741">
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="preload" as="image" href="/static/illustrations/family-care-hero.webp" type="image/webp">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260815">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d1">
   <title>Briga+ | Porodični panel</title>
 </head>
 <body class="family-dashboard-page {% if membership.role == 'senior' %}senior-account{% elif not has_health_access %}basic-family-account{% endif %}" data-user-id="{{ user.id }}">
@@ -56,7 +56,7 @@
         <b class="family-avatar">{{ user.first_name|default:user.username|slice:":1" }}</b>
       </div>
     </header>
-    <form class="family-mobile-sos" id="family-mobile-sos" method="post" data-confirm-message="Šaljete SOS za sebe i GPS lokaciju ovog telefona članovima porodice. Nastaviti?">
+    <form class="family-mobile-sos" id="family-mobile-sos" method="post" data-sos-overlay="true">
       {% csrf_token %}
       <input type="hidden" name="action" value="sos">
       <input type="hidden" name="latitude">
@@ -68,11 +68,16 @@
       </button>
       <p id="family-mobile-sos-status" aria-live="polite"></p>
     </form>
-    <article class="family-mobile-status">
+    <article class="family-mobile-status card-glass">
       <span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#check-circle"></use></svg></span>
-      <div><b>{% if last_checkin %}Danas je sve u redu{% else %}Čekamo jutarnju prijavu{% endif %}</b><p>{% if last_checkin %}{{ care_person.first_name|default:care_person.username }} se javio/la i potvrdio/la da je dobro.{% else %}Pošaljite blag podsetnik jednim dodirom.{% endif %}</p><button type="button" data-modal="week">Pogledaj detalje <i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></div>
+      <div><b>{% if last_checkin %}{{ care_person.first_name|default:care_person.username }} je odlično danas{% else %}Čekamo da se {{ care_person.first_name|default:care_person.username }} javi{% endif %}</b><p>{% if last_checkin %}Dnevna potvrda je stigla i porodica je obaveštena.{% else %}Pošaljite blag podsetnik jednim dodirom.{% endif %}</p><button type="button" data-modal="week">Pogledaj detalje <i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></div>
       <em><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#sun"></use></svg></em>
     </article>
+    <h2>Zdravlje danas</h2>
+    <div class="family-health-glass" aria-label="Zdravstveni pokazatelji">
+      <button class="card-glass" type="button" data-modal="devices"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#activity"></use></svg></span><div><b>Koraci</b><strong>—</strong><small>Povežite uređaj</small></div></button>
+      <button class="card-glass" type="button" data-modal="health"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pulse"></use></svg></span><div><b>Puls</b><strong>—</strong><small>Dodajte merenje</small></div></button>
+    </div>
     <h2>Brzi pregled</h2>
     <div class="family-mobile-stats">
       <button type="button" data-modal="week"><span><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#heart"></use></svg></span><b>{% if last_checkin %}Da{% else %}—{% endif %}</b><small>Dobro danas</small></button>
@@ -95,10 +100,9 @@
     </button>
     <nav>
       <a href="#danas"><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#home"></use></svg><span>Početna</span></a>
-      <button type="button" data-modal="reminders"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg><span>Terapija</span></button>
+      <button type="button" data-modal="health"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#heart"></use></svg><span>Zdravlje</span></button>
       <button type="button" data-modal="tasks"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg><span>Zadaci</span></button>
-      <button type="button" data-modal="chat"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg><span>Poruke</span></button>
-      <button type="button" data-modal="all-tools"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg><span>Meni</span></button>
+      <button type="button" data-modal="all-tools"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#settings"></use></svg><span>Podešavanja</span></button>
     </nav>
   </section>
   {% endif %}
@@ -257,7 +261,7 @@ const pushButton=document.querySelector('#push-button'),pushStatus=document.quer
 const contrastToggle=document.querySelector('#contrast-toggle'); const setContrast=enabled=>{document.body.classList.toggle('high-contrast',enabled);contrastToggle.textContent=enabled?'Standardni kontrast':'Jači kontrast';localStorage.setItem('briga-high-contrast',enabled?'1':'0');}; setContrast(localStorage.getItem('briga-high-contrast')==='1');contrastToggle.addEventListener('click',()=>setContrast(!document.body.classList.contains('high-contrast')));
 const readHealth=document.querySelector('#read-health'); let healthSpeechActive=false; const loadSpeechVoices=()=>new Promise(resolve=>{const voices=speechSynthesis.getVoices();if(voices.length){resolve(voices);return;}const done=()=>resolve(speechSynthesis.getVoices());speechSynthesis.addEventListener('voiceschanged',done,{once:true});setTimeout(done,1200);}); const sophieVoice=voices=>voices.find(voice=>/sophie/i.test(voice.name)&&(/^sr(?:-|_)/i.test(voice.lang)||/serbian|srpski/i.test(voice.name))); const clearSerbianText=text=>text.replace(/(\d{2,3})\s*\/\s*(\d{2,3})/g,'$1 kroz $2').replace(/(\d),(\d)/g,'$1 zarez $2').replace(/\s+/g,' ').trim(); const speakHealthInSerbian=async()=>{if(!('speechSynthesis'in window)){readHealth.textContent='Čitanje naglas nije podržano na ovom uređaju.';return;}if(healthSpeechActive){speechSynthesis.cancel();return;}readHealth.textContent='Pripremamo Sophie glas…';const voice=sophieVoice(await loadSpeechVoices());if(!voice){readHealth.textContent='Sophie srpski glas nije dostupan u ovom pregledniku.';return;}const entries=[...document.querySelectorAll('.health-list article')].map(item=>clearSerbianText(item.innerText));const narration=entries.length?`Zdravstveni dnevnik. ${entries.join('. ')}. Kraj unosa.`:'Zdravstveni dnevnik je trenutno prazan.';speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(narration);utterance.lang='sr-RS';utterance.voice=voice;utterance.rate=.82;utterance.pitch=1;utterance.volume=1;utterance.onstart=()=>{healthSpeechActive=true;readHealth.textContent='■ Zaustavi čitanje';};utterance.onend=utterance.onerror=()=>{healthSpeechActive=false;readHealth.textContent='🔊 Pročitaj poslednje unose';};speechSynthesis.speak(utterance);}; if(readHealth)readHealth.addEventListener('click',speakHealthInSerbian);
 </script>
-<script defer src="/static/sos-location.js?v=20260813"></script>
+<script defer src="/static/sos-location.js?v=20260801d1"></script>
 <script defer src="/static/mobile-enhancements.js?v=20260816"></script>
 <script defer src="/static/chat-live.js?v=20260807"></script>
 <script defer src="/static/deep-links.js?v=20260803"></script>

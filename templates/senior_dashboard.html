@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0d553d">
+  <meta name="theme-color" content="#4A6741">
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="preload" as="image" href="/static/illustrations/family-care-hero.webp" type="image/webp">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20260815">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20260801d1">
   <title>Briga+ | Moj dan</title>
 </head>
 <body class="senior-panel-page" data-user-id="{{ user.id }}">
@@ -17,22 +17,29 @@
 
   <main class="senior-shell">
     {% for message in messages %}<div class="senior-flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
-    <section class="senior-picture-home" aria-label="Moj dan">
-      <div class="picture-top"><form class="picture-sos" id="picture-sos" method="post" data-send-immediately="true">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="accuracy"><button type="submit"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><div><b>SOS</b><small>Jedan dodir odmah šalje pomoć</small></div></button><p id="picture-sos-status" aria-live="polite"></p></form></div>
+    <section class="senior-picture-home senior-day-design" id="moj-dan" aria-label="Moj dan">
+      <header class="senior-day-header">
+        <div><span>Moj dan</span><h1>Dobro jutro, {{ user.first_name|default:user.username }}</h1><p>Tu smo uz vas, svaki dan.</p></div>
+        <button class="sophie-halo" type="button" data-dialog="guidance-senior" aria-label="Otvori Sophie glasovnog asistenta"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#sparkles"></use></svg><small>Sophie</small></button>
+      </header>
       <article class="picture-greeting picture-care-hero"><img class="picture-care-hero-image" src="/static/illustrations/family-care-hero.webp" alt="Članica porodice pruža podršku starijoj osobi" decoding="async" fetchpriority="high"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#sun"></use></svg></span><div><b>Dobro jutro, {{ user.first_name|default:user.username }}!</b><p>Tu smo uz vas, svaki dan.</p></div><i><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#heart"></use></svg></i></article>
-      <form method="post" class="picture-card good">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button><span><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#heart"></use></svg></span><div><b>Dobro sam</b><small>Prijavi kako se osećaš</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></form>
-      <button class="picture-card medicine" id="picture-therapy" type="button" data-dialog="therapy"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><div><b>{% if next_reminder %}{{ next_reminder.title }}{% else %}Moja terapija{% endif %}</b><small>{% if next_reminder %}{{ next_reminder.scheduled_for|date:"H:i" }} · otvori detalje{% else %}Podsetnik za lekove{% endif %}</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
+      <div class="senior-primary-grid">
+        <button class="picture-card medicine card-glass" id="picture-therapy" type="button" data-dialog="therapy"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><div><b>Lekovi</b><small>{% if next_reminder %}Sledeći u {{ next_reminder.scheduled_for|date:"H:i" }}{% else %}Nema dospelih lekova{% endif %}</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
+        <button class="picture-card activity card-glass" type="button" data-dialog="routine-senior"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#activity"></use></svg></span><div><b>Aktivnosti</b><small>{% if routines %}Vreme je za dnevne aktivnosti{% else %}Plan dana je miran{% endif %}</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
+      </div>
+      <form method="post" class="picture-card good senior-checkin-card">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button><span><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#heart"></use></svg></span><div><b>Dobro sam</b><small>Prijavi porodici kako se osećaš</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button></form>
+      <div class="senior-secondary-actions">
       <button class="picture-card call" id="picture-family" type="button" data-dialog="family-senior"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><div><b>Pozovi porodicu</b><small>{% if contacts %}{{ contacts.0.name }} · brzo i lako{% else %}Porodica je tu{% endif %}</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
       <button class="picture-card chat" type="button" data-dialog="chat"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg></span><div><b>Porodične poruke</b><small>Pišite svima u porodici</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
       <button class="picture-card diary" type="button" data-dialog="health"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg></span><div><b>Moj dnevnik zdravlja</b><small>Beleške, dokumenta i simptomi</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
       <button class="picture-card more" type="button" data-dialog="senior-more"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg></span><div><b>Sve funkcije</b><small>Moj plan, raspoloženje, Sophie, pomoć i podešavanja</small></div><i><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></i></button>
+      </div>
+      <form class="picture-sos senior-sos-fab" id="picture-sos" method="post" data-sos-overlay="true">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="accuracy"><button type="submit" aria-label="Pošalji SOS i GPS lokaciju"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><div><b>SOS</b><small>Pošalji pomoć</small></div></button><p id="picture-sos-status" aria-live="polite"></p></form>
       <p class="picture-privacy"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#shield"></use></svg> Vaši podaci su zaštićeni i dele se samo sa porodicom.</p>
       <nav class="picture-bottom-nav">
-        <a href="#picture-sos"><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#home"></use></svg><span>Početna</span></a>
-        <button type="button" data-dialog="therapy"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg><span>Terapija</span></button>
-        <button type="button" data-dialog="chat"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg><span>Poruke</span></button>
-        <button type="button" data-dialog="health"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg><span>Dnevnik</span></button>
-        <button type="button" data-dialog="senior-more"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg><span>Meni</span></button>
+        <a href="#moj-dan"><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#calendar"></use></svg><span>Dan</span></a>
+        <button type="button" data-dialog="therapy"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg><span>Lekovi</span></button>
+        <button type="button" data-dialog="senior-more"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#help"></use></svg><span>Pomoć</span></button>
       </nav>
     </section>
     <section class="senior-welcome"><p>MOJ DAN</p><h1>Zdravo, {{ user.first_name|default:user.username }}.</h1><span>{% now "l, d. F" %}</span></section>
@@ -146,7 +153,7 @@
     const requestedDialog=new URLSearchParams(window.location.search).get('open');if(requestedDialog&&document.getElementById(requestedDialog)?.showModal){const dialog=document.getElementById(requestedDialog);dialog.showModal();prepareDialog(dialog)}
     document.querySelectorAll('.senior-back').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
   </script>
-  <script defer src="/static/sos-location.js?v=20260813"></script>
+  <script defer src="/static/sos-location.js?v=20260801d1"></script>
   <script defer src="/static/mobile-enhancements.js?v=20260816"></script>
   <script defer src="/static/chat-live.js?v=20260807"></script>
   <script defer src="/static/deep-links.js?v=20260803"></script>
