@@ -9,3 +9,4 @@ django-storages[s3]>=1.14,<2
 firebase-admin>=7,<8
 httpx[http2]>=0.28,<1
 PyJWT[crypto]>=2.10,<3
+qrcode>=8.2,<9

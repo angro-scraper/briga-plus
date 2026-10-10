@@ -43,13 +43,13 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/zdravlje/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
-        self.assertEqual(response.json()['version'], '0.6.8')
+        self.assertEqual(response.json()['version'], '0.7.0')
 
     def test_service_worker_is_never_reused_without_a_fresh_check(self):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-theme-refresh-20260801d3")
+        self.assertContains(response, "briga-plus-release-20261010a")
         self.assertContains(response, "/static/sos-location.js?v=20260801d1")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
@@ -75,8 +75,8 @@ class DashboardFlowTests(TestCase):
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
-        self.assertContains(response, '/static/briga-v2.css?v=20260801d3')
-        self.assertContains(response, '/static/briga-v2.js?v=20260803')
+        self.assertContains(response, '/static/briga-v2.css?v=20261010a')
+        self.assertContains(response, '/static/briga-v2.js?v=20261010a')
         self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
 
@@ -716,6 +716,40 @@ class DashboardFlowTests(TestCase):
         self.assertTrue(PrivacyConsent.objects.filter(user=joined).exists())
         self.client.logout()
         self.assertEqual(self.client.get(invite.get_absolute_url()).status_code, 404)
+
+    def test_admin_can_create_and_switch_between_separate_care_profiles(self):
+        response = self.client.post('/', {
+            'action': 'create_care_circle',
+            'care_person_name': 'Nada Jovanović',
+            'circle_name': 'Dom Sunce · Nada',
+        })
+        self.assertRedirects(response, '/?open=family')
+        new_membership = Membership.objects.get(
+            user=self.user, family__name='Dom Sunce · Nada', role=Membership.Role.ADMIN,
+        )
+        invite = FamilyInvite.objects.get(family=new_membership.family, role=Membership.Role.SENIOR)
+        self.assertEqual(invite.recipient_label, 'Nada Jovanović')
+
+        response = self.client.get(f'/?family={self.family.id}&open=family')
+        self.assertContains(response, 'Moja čuvana lica')
+        self.assertContains(response, 'Dom Sunce · Nada')
+        self.assertEqual(self.client.session['active_family_id'], self.family.id)
+
+    def test_active_invite_has_private_scannable_qr(self):
+        invite = FamilyInvite.objects.create(
+            family=self.family, created_by=self.user, recipient_label='Jelena',
+            role=Membership.Role.SENIOR, access_level=Membership.AccessLevel.BASIC,
+        )
+        response = self.client.get(f'/poziv/{invite.token}/qr.svg')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/svg+xml')
+        self.assertIn('private, no-store', response['Cache-Control'])
+        self.assertIn(b'<svg', response.content)
+        self.assertGreater(len(response.content), 1000)
+
+        outsider = User.objects.create_user('stranac', password='bezbedna-lozinka-123')
+        self.client.force_login(outsider)
+        self.assertEqual(self.client.get(f'/poziv/{invite.token}/qr.svg').status_code, 404)
 
     def test_admin_can_approve_full_access_for_family_member(self):
         caregiver = User.objects.create_user('porodicni_clan', password='bezbedna-lozinka-123')

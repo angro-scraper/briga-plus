@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from users.views import BrigaLoginView, accept_invite, account, android_asset_links, apple_app_site_association, chat_messages_api, control_center, dashboard, register, senior_dashboard, senior_easy, service_worker, health, native_push_subscribe, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
+from users.views import BrigaLoginView, accept_invite, account, android_asset_links, apple_app_site_association, chat_messages_api, control_center, dashboard, invite_qr, register, senior_dashboard, senior_easy, service_worker, health, native_push_subscribe, protected_media, privacy_policy, push_subscribe, sophie_speech, terms
 
 urlpatterns = [
     path('.well-known/assetlinks.json', android_asset_links, name='android_app_links'),
@@ -32,6 +32,7 @@ urlpatterns = [
     path('odjava/', auth_views.LogoutView.as_view(), name='odjava'),
     path('registracija/', register, name='registracija'),
     path('poziv/<uuid:token>/', accept_invite, name='poziv'),
+    path('poziv/<uuid:token>/qr.svg', invite_qr, name='poziv_qr'),
     path('kontrola/', control_center, name='kontrola'),
     path('nalog/', account, name='nalog'),
     path('politika-privatnosti/', privacy_policy, name='politika_privatnosti'),

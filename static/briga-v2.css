@@ -5392,6 +5392,114 @@ body.high-contrast .family-mobile-home button {
   }
 }
 
+/* Više potpuno odvojenih krugova brige za porodicu ili profesionalni tim. */
+.care-circle-switcher {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid rgba(74, 103, 65, .16);
+  border-radius: 20px;
+  background: rgba(249, 247, 242, .76);
+}
+
+.care-circle-switcher h3,
+.invite-list h3 {
+  margin: 0 0 11px;
+}
+
+.care-circle-switcher > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.care-circle-card {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid rgba(74, 103, 65, .15);
+  border-radius: 16px;
+  color: var(--bp-ink);
+  background: #fff;
+  text-decoration: none;
+}
+
+.care-circle-card.is-active {
+  border-color: var(--bp-green-500);
+  background: rgba(74, 103, 65, .09);
+  box-shadow: 0 8px 20px rgba(74, 103, 65, .1);
+}
+
+.care-circle-card b,
+.care-circle-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.care-circle-card small {
+  color: var(--bp-muted);
+  font-size: .75rem;
+}
+
+.care-circle-card i {
+  color: var(--bp-green-700);
+}
+
+.new-care-circle-form > p {
+  margin: -3px 0 2px;
+  color: var(--bp-muted);
+  font-size: .84rem;
+}
+
+.invite-entry-with-qr {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  align-items: center;
+  gap: 15px;
+}
+
+.invite-entry-with-qr > img {
+  width: 116px;
+  height: 116px;
+  padding: 7px;
+  border: 1px solid rgba(74, 103, 65, .16);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.invite-entry-with-qr input {
+  margin-top: 8px;
+  font-size: .75rem;
+}
+
+.invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .care-circle-switcher > div,
+  .invite-entry-with-qr {
+    grid-template-columns: 1fr;
+  }
+
+  .invite-entry-with-qr > img {
+    width: 144px;
+    height: 144px;
+    justify-self: center;
+  }
+
+  .new-care-circle-form .form-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Component refinements for complete application states
    -------------------------------------------------------------------------- */

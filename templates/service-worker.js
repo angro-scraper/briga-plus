@@ -1,7 +1,7 @@
-const CACHE = 'briga-plus-theme-refresh-20260801d3';
+const CACHE = 'briga-plus-release-20261010a';
 const OFFLINE = [
-  '/static/briga-v2.css?v=20260801d3',
-  '/static/briga-v2.js?v=20260803',
+  '/static/briga-v2.css?v=20261010a',
+  '/static/briga-v2.js?v=20261010a',
   '/static/sos-location.js?v=20260801d1',
   '/static/mobile-enhancements.js?v=20260816',
   '/static/chat-live.js?v=20260807',

@@ -24,6 +24,8 @@ Pre objavljivanja kopirati `.env.example` u `.env`, upisati pravi tajni ključ i
 
 - prijava i registracija;
 - porodična grupa i uloge u bazi;
+- upravljački nalog može voditi više potpuno odvojenih čuvanih lica (porodica ili firma) i trenutno lice menja iz panela;
+- za svako čuvano lice nastaje jednokratna pozivnica sa pravim QR kodom i HTTPS/deep linkom ka korisničkoj aplikaciji;
 - dnevna potvrda „Dobro sam”;
 - podsetnici, porodični zadaci i poruke u domen modelu;
 - prikaz i unos zadataka, poruka i SOS signala;

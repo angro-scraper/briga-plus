@@ -57,4 +57,21 @@
       target.style.scrollMarginBottom = '100px';
     });
   });
+
+  document.querySelectorAll('.copy-invite-link').forEach(button => {
+    button.addEventListener('click', async () => {
+      const value = button.dataset.copyValue || '';
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        button.textContent = 'Link je kopiran ✓';
+      } catch (_) {
+        const input = button.closest('.invite-entry')?.querySelector('input[readonly]');
+        input?.focus();
+        input?.select();
+        button.textContent = 'Označeno — kopirajte';
+      }
+      window.setTimeout(() => { button.textContent = 'Kopiraj link'; }, 2400);
+    });
+  });
 })();

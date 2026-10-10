@@ -1,6 +1,7 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from io import BytesIO
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from xml.sax.saxutils import escape
@@ -15,9 +16,12 @@ from django.core.files.storage import default_storage
 from django.db import close_old_connections
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.cache import never_cache
+import qrcode
+import qrcode.image.svg
 
 from alerts.models import Alert, NativePushDevice, PushSubscription
 from alerts.push import send_push_alert
@@ -102,6 +106,24 @@ def notify_user(recipient, kind, title, body='', url='/'):
     """Kratko stanje SOS odgovora vraća se osobi koja je poslala poziv."""
     alert = Alert.objects.create(recipient=recipient, kind=kind, title=title, body=body, url=url)
     send_push_alert(alert)
+
+
+@login_required
+def invite_qr(request, token):
+    """Vraća pravi QR samo administratoru porodice koja je napravila pozivnicu."""
+    invite = FamilyInvite.objects.filter(token=token).select_related('family').first()
+    if not invite or not invite.available or not invite.family.memberships.filter(
+        user=request.user, role=Membership.Role.ADMIN,
+    ).exists():
+        raise Http404
+    factory = qrcode.image.svg.SvgPathImage
+    image = qrcode.make(request.build_absolute_uri(invite.get_absolute_url()), image_factory=factory)
+    output = BytesIO()
+    image.save(output)
+    response = HttpResponse(output.getvalue(), content_type='image/svg+xml')
+    response['Cache-Control'] = 'private, no-store'
+    response['Content-Disposition'] = f'inline; filename="briga-poziv-{invite.token}.svg"'
+    return response
 
 
 def recent_chronological(queryset, limit=50):
@@ -311,7 +333,7 @@ def health(request):
     return JsonResponse({
         'status': 'ok',
         'application': 'Briga+',
-        'version': '0.6.8',
+        'version': '0.7.0',
         'durable_media_configured': bool(settings.BRIGA_DURABLE_MEDIA_CONFIGURED),
         'push_configured': bool(settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY),
         'android_app_links_configured': bool(settings.BRIGA_ANDROID_APP_LINK_SHA256),
@@ -532,7 +554,18 @@ def native_push_subscribe(request):
 @login_required
 def dashboard(request):
     memberships = request.user.family_memberships.select_related('family')
-    membership = memberships.filter(family__memberships__role=Membership.Role.SENIOR).distinct().first() or memberships.first()
+    senior_membership_for_user = memberships.filter(role=Membership.Role.SENIOR).first()
+    selected_family_id = request.GET.get('family') or request.session.get('active_family_id')
+    if not str(selected_family_id or '').isdigit():
+        selected_family_id = None
+    membership = memberships.filter(family_id=selected_family_id).first() if selected_family_id else None
+    if senior_membership_for_user:
+        # Čuvano lice se nikada ne prebacuje u upravljački panel drugog kruga.
+        membership = senior_membership_for_user
+    elif not membership:
+        membership = memberships.filter(family__memberships__role=Membership.Role.SENIOR).distinct().first() or memberships.first()
+    if membership:
+        request.session['active_family_id'] = membership.family_id
     if not membership and request.user.is_staff:
         return redirect('kontrola')
     family = membership.family if membership else None
@@ -549,7 +582,30 @@ def dashboard(request):
         return_modal = request.POST.get('return_modal', '')
         if return_modal not in {'chat', 'reminders', 'tasks', 'contacts', 'alerts', 'sos-detail', 'health', 'safety', 'week', 'family', 'routine', 'profile', 'visits', 'documents', 'mood', 'devices', 'feedback'}:
             return_modal = ''
-        if action == 'checkin' and (membership.role == Membership.Role.SENIOR or care_user == request.user):
+        if action == 'create_care_circle' and membership.role == Membership.Role.ADMIN:
+            care_person_name = request.POST.get('care_person_name', '').strip()[:120]
+            circle_name = request.POST.get('circle_name', '').strip()[:120]
+            if not care_person_name:
+                messages.error(request, 'Unesite ime čuvanog lica.')
+            else:
+                new_family = Family.objects.create(name=circle_name or f'Briga za {care_person_name}')
+                Membership.objects.create(
+                    family=new_family, user=request.user,
+                    role=Membership.Role.ADMIN, access_level=Membership.AccessLevel.FULL,
+                )
+                invite = FamilyInvite.objects.create(
+                    family=new_family, created_by=request.user,
+                    recipient_label=care_person_name, role=Membership.Role.SENIOR,
+                    access_level=Membership.AccessLevel.BASIC,
+                )
+                request.session['active_family_id'] = new_family.id
+                audit(request.user, AuditEvent.Event.INVITE_CREATED, new_family, f'Pozivnica #{invite.id}', {
+                    'role': Membership.Role.SENIOR, 'access': Membership.AccessLevel.BASIC,
+                    'created_with_care_circle': True,
+                })
+                messages.success(request, f'Profil za {care_person_name} je spreman. Pošaljite link ili pokažite QR kod.')
+                return redirect('/?open=family')
+        elif action == 'checkin' and (membership.role == Membership.Role.SENIOR or care_user == request.user):
             note = request.POST.get('note', '').strip()[:240]
             period = request.POST.get('period', CheckIn.Period.ANY)
             if period not in CheckIn.Period.values:
@@ -860,7 +916,19 @@ def dashboard(request):
     if family and membership.role == Membership.Role.ADMIN:
         for invite in family.invites.filter(accepted_at__isnull=True, expires_at__gt=now)[:8]:
             invite.share_url = request.build_absolute_uri(invite.get_absolute_url())
+            invite.qr_url = request.build_absolute_uri(reverse('poziv_qr', kwargs={'token': invite.token}))
             family_invites.append(invite)
+    care_circles = []
+    if membership and membership.role != Membership.Role.SENIOR:
+        circle_memberships = memberships.exclude(role=Membership.Role.SENIOR).order_by(
+            'family__name',
+        ).prefetch_related('family__memberships__user')
+        for circle_membership in circle_memberships:
+            circle_membership.care_person = next((
+                member for member in circle_membership.family.memberships.all()
+                if member.role == Membership.Role.SENIOR
+            ), None)
+            care_circles.append(circle_membership)
     return render(request, 'dashboard.html', {
         'family': family, 'membership': membership, 'care_person': care_user,
         'last_checkin': care_user.checkins.first(), 'reminders': active_reminders[:8], 'next_reminder': next_reminder,
@@ -879,6 +947,7 @@ def dashboard(request):
         'has_health_access': health_access, 'can_manage_care': can_coordinate(membership),
         'is_family_panel': membership.role != Membership.Role.SENIOR,
         'family_invites': family_invites,
+        'care_circles': care_circles,
         'privacy_current': PrivacyConsent.objects.filter(user=request.user, policy_version=PrivacyConsent.POLICY_VERSION).exists(),
     })
 
