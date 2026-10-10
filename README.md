@@ -69,6 +69,6 @@ Fotografije pakovanja, dokumenti i glasovne poruke su dostupni samo prijavljenim
 
 1. U Renderu postaviti VAPID, Firebase i APNs ključeve na web servisu i cron servisu, zatim testirati push na stvarnom Androidu i iPhone-u.
 2. Kreirati privatni R2/S3 bucket i uneti `BRIGA_STORAGE_*` promenljive.
-3. Zameniti privremenu `podrska@briga-plus.rs` stvarnim kontaktom i dopuniti Politiku privatnosti poslovnim podacima posle pravnog pregleda.
+3. Pre rada sa stvarnim zdravstvenim podacima obezbediti završni pravni pregled Politike privatnosti i Uslova korišćenja.
 4. Promeniti početnu lozinku vlasničkog naloga i uključiti višefaktorsku zaštitu na Render, GitHub, Apple i Google nalozima.
 5. Proći zatvoreni pilot: pozivnica, nivo pristupa, SOS sa i bez GPS-a, terapija, odbijena dozvola, brisanje naloga i vraćanje iz backup-a.
