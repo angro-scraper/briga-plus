@@ -49,7 +49,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-release-20261010a")
+        self.assertContains(response, "briga-plus-release-20261013f4")
         self.assertContains(response, "/static/sos-location.js?v=20260801d1")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
@@ -76,6 +76,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
         self.assertContains(response, '/static/briga-v2.css?v=20261010a')
+        self.assertContains(response, '/static/figma-final.css?v=20261013f4')
         self.assertContains(response, '/static/briga-v2.js?v=20261010a')
         self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
@@ -88,10 +89,10 @@ class DashboardFlowTests(TestCase):
 
         response = self.client.get('/')
 
-        self.assertContains(response, 'class="family-care-message"')
-        self.assertContains(response, 'Brinemo o Milica')
-        self.assertContains(response, '/static/illustrations/family-care-hero.webp')
-        self.assertContains(response, 'Članica porodice pruža podršku starijoj osobi')
+        self.assertContains(response, 'class="figma-person-switcher"')
+        self.assertContains(response, 'AKTIVNO ČUVANO LICE')
+        self.assertContains(response, 'Evo kako je Milica danas.')
+        self.assertContains(response, 'class="figma-status-card"')
 
     def test_notifications_are_clickable_and_open_a_detailed_view(self):
         Alert.objects.create(
@@ -265,8 +266,8 @@ class DashboardFlowTests(TestCase):
             'id="all-tools"', 'data-modal="chat"', 'data-modal="reminders"',
             'data-modal="tasks"', 'data-modal="contacts"', 'data-modal="documents"',
             'data-modal="visits"', 'data-modal="safety"', 'data-modal="devices"',
-            'id="family-mobile-sos"', 'SOS za mene',
-            'Šalje moju GPS lokaciju članovima porodice',
+            'class="figma-sos-monitor"', 'SOS CENTAR PORODICE',
+            'Lokacija, ruta i odgovor porodice',
         ):
             self.assertContains(family_response, marker)
 
@@ -456,12 +457,12 @@ class DashboardFlowTests(TestCase):
         self.assertContains(response, 'q=44.786568,20.448922')
         self.assertNotContains(response, 'query=44,786568,20,448922')
 
-    def test_family_panel_sos_is_explicitly_for_the_signed_in_member(self):
+    def test_family_panel_uses_a_monitoring_sos_center_instead_of_sending_for_the_cared_person(self):
         response = self.client.get('/')
 
-        self.assertContains(response, 'SOS za mene')
-        self.assertContains(response, 'Šalje moju GPS lokaciju članovima porodice')
-        self.assertContains(response, 'data-sos-overlay="true"')
+        self.assertContains(response, 'SOS CENTAR PORODICE')
+        self.assertContains(response, 'Lokacija, ruta i odgovor porodice')
+        self.assertNotContains(response, 'id="family-mobile-sos"')
 
     @patch('users.views.send_push_alert', return_value={'native_sent': 1, 'web_sent': 0})
     def test_sos_alert_is_saved_and_pushed_to_every_other_family_member(self, send_push):
@@ -650,24 +651,24 @@ class DashboardFlowTests(TestCase):
         Membership.objects.create(user=senior, family=self.family, role=Membership.Role.SENIOR)
         self.client.force_login(senior)
         response = self.client.get('/')
-        self.assertContains(response, 'MOJ DAN')
-        self.assertContains(response, 'SOS — POZOVI POMOĆ')
+        self.assertContains(response, 'Moj dan')
+        self.assertContains(response, 'SOS — TREBA MI POMOĆ')
         self.assertContains(response, 'id="therapy"')
         self.assertContains(response, 'data-dialog="therapy"')
         self.assertContains(response, 'id="family-senior"')
         self.assertContains(response, 'data-dialog="family-senior"')
         self.assertContains(response, 'id="picture-sos"')
         self.assertContains(response, 'data-sos-overlay="true"')
-        self.assertContains(response, 'class="sophie-halo"')
-        self.assertContains(response, 'class="senior-primary-grid"')
-        self.assertContains(response, '<span>Dan</span>')
+        self.assertContains(response, 'class="figma-sophie"')
+        self.assertContains(response, 'class="figma-senior-grid"')
+        self.assertContains(response, '<span>Moj dan</span>')
         self.assertContains(response, '<span>Lekovi</span>')
+        self.assertContains(response, '<span>Poruke</span>')
         self.assertContains(response, '<span>Pomoć</span>')
         self.assertNotContains(response, 'id="picture-text-toggle"')
-        self.assertContains(response, 'Pošalji SOS i GPS lokaciju')
-        self.assertContains(response, 'class="picture-greeting picture-care-hero"')
-        self.assertContains(response, '/static/illustrations/family-care-hero.webp', count=2)
-        self.assertContains(response, 'fetchpriority="high"')
+        self.assertContains(response, 'Pošalji porodici odmah')
+        self.assertContains(response, 'Zdravo, ja sam Sophie')
+        self.assertContains(response, '/static/figma-final.css?v=20261013f4')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
 
     def test_cared_person_can_add_pdf_to_personal_health_diary(self):

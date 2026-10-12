@@ -1,6 +1,7 @@
-const CACHE = 'briga-plus-release-20261010a';
+const CACHE = 'briga-plus-release-20261013f4';
 const OFFLINE = [
   '/static/briga-v2.css?v=20261010a',
+  '/static/figma-final.css?v=20261013f4',
   '/static/briga-v2.js?v=20261010a',
   '/static/sos-location.js?v=20260801d1',
   '/static/mobile-enhancements.js?v=20260816',

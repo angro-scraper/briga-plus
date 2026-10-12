@@ -7,9 +7,10 @@
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="preload" as="image" href="/static/illustrations/family-care-hero.webp" type="image/webp">
   <link rel="stylesheet" href="/static/briga-v2.css?v=20261010a">
+  <link rel="stylesheet" href="/static/figma-final.css?v=20261013f4">
   <title>Briga+ | Moj dan</title>
 </head>
-<body class="senior-panel-page" data-user-id="{{ user.id }}">
+<body class="senior-panel-page figma-final figma-final-senior" data-user-id="{{ user.id }}">
   <header class="senior-topbar">
     <a class="senior-brand" href="/moj-dan/" aria-label="Briga+ moj dan"><img src="/static/briga-mark.svg" alt=""> Briga<span>+</span></a>
     <div><a class="senior-link" href="/jednostavno/">Jednostavan ekran</a><form method="post" action="{% url 'odjava' %}">{% csrf_token %}<button>Odjava</button></form></div>
@@ -17,7 +18,9 @@
 
   <main class="senior-shell">
     {% for message in messages %}<div class="senior-flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
-    <section class="senior-picture-home senior-day-design" id="moj-dan" aria-label="Moj dan">
+    {% include "partials/figma_senior_home.html" %}
+    {% if False %}
+    <section class="senior-picture-home senior-day-design legacy-senior-picture-home" aria-label="Stari prikaz" hidden>
       <header class="senior-day-header">
         <div><span>Moj dan</span><h1>Dobro jutro, {{ user.first_name|default:user.username }}</h1><p>Tu smo uz vas, svaki dan.</p></div>
         <button class="sophie-halo" type="button" data-dialog="guidance-senior" aria-label="Otvori Sophie glasovnog asistenta"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#sparkles"></use></svg><small>Sophie</small></button>
@@ -42,6 +45,8 @@
         <button type="button" data-dialog="senior-more"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#help"></use></svg><span>Pomoć</span></button>
       </nav>
     </section>
+    {% endif %}
+    {% if False %}
     <section class="senior-welcome"><p>MOJ DAN</p><h1>Zdravo, {{ user.first_name|default:user.username }}.</h1><span>{% now "l, d. F" %}</span></section>
 
     <section class="voice-greeting" id="voice-greeting" data-name="{{ user.first_name|default:user.username|escape }}" aria-labelledby="voice-greeting-title">
@@ -53,14 +58,18 @@
       </div>
       <div class="voice-reminder-line"><span id="voice-reminder-status">Podsetnik u aplikaciji je spreman.</span><button id="voice-reminder-toggle" type="button">Uključi jutro, popodne i veče</button></div>
     </section>
+    {% endif %}
 
     {% if active_sos %}<section class="sos-active"><b>SOS je aktivan.</b><p>Porodica je obaveštena.{% if active_sos.responder_en_route_at %} Neko je krenuo ka vama.{% elif active_sos.acknowledged_at %} Porodica je videla vaš SOS.{% endif %}</p></section>{% endif %}
 
+    {% if False %}
     <section class="senior-sos" aria-label="Hitna pomoć">
       <div><span>HITNA POMOĆ</span><h2>Treba mi pomoć</h2><p>Porodica odmah dobija SOS i vašu GPS lokaciju.</p></div>
       <form id="senior-sos" method="post" data-send-immediately="true">{% csrf_token %}<input type="hidden" name="action" value="sos"><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="accuracy"><button type="submit">SOS — POZOVI POMOĆ</button><p id="senior-sos-status" aria-live="polite"></p></form>
     </section>
+    {% endif %}
 
+    {% if False %}
     <section class="senior-action-grid" aria-label="Najvažnije stvari">
       <article class="senior-action checkin"><span class="action-icon">✓</span><p>DNEVNA POTVRDA</p><h2>Dobro sam</h2><small>Jednim dodirom javite porodici.</small><form method="post">{% csrf_token %}<input type="hidden" name="action" value="checkin"><button>Pošalji „Dobro sam”</button></form></article>
       <article class="senior-action reminder"><span class="action-icon">◷</span><p>SLEDEĆA OBAVEZA</p>{% if next_reminder %}<h2>{{ next_reminder.title }}</h2><small>{{ next_reminder.scheduled_for|date:"H:i" }}{% if next_reminder.dosage %} · {{ next_reminder.dosage }}{% endif %}</small><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reminder_done"><input type="hidden" name="reminder_id" value="{{ next_reminder.id }}"><button>Urađeno ✓</button></form>{% else %}<h2>Mirno je</h2><small>Trenutno nema obaveza.</small>{% endif %}</article>
@@ -75,6 +84,7 @@
       <button class="senior-open-card support-card" type="button" data-dialog="help"><span>✦</span><b>Treba mi pomoć</b><small>Pošaljite poruku porodici, bez SOS-a</small></button>
       {% if next_visit %}<article class="visit-card"><span>⌂</span><b>Sledeća poseta</b><p>{{ next_visit.visitor.first_name|default:next_visit.visitor.username }} · {{ next_visit.scheduled_for|date:"d.m." }} u {{ next_visit.scheduled_for|date:"H:i" }}</p></article>{% endif %}
     </section>
+    {% endif %}
   </main>
 
   <dialog class="senior-dialog senior-menu-dialog" id="senior-more">
@@ -153,7 +163,7 @@
     const requestedDialog=new URLSearchParams(window.location.search).get('open');if(requestedDialog&&document.getElementById(requestedDialog)?.showModal){const dialog=document.getElementById(requestedDialog);dialog.showModal();prepareDialog(dialog)}
     document.querySelectorAll('.senior-back').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
   </script>
-  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20261010a').then(registration => registration.update());</script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?ui=20261013f4').then(registration => registration.update());</script>
   <script defer src="/static/sos-location.js?v=20260801d1"></script>
   <script defer src="/static/mobile-enhancements.js?v=20260816"></script>
   <script defer src="/static/chat-live.js?v=20260807"></script>

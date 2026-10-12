@@ -1108,6 +1108,7 @@ def senior_dashboard(request, membership=None):
         'contacts': family.emergency_contacts.all(),
         'routines': routines,
         'routine_done_count': len(completed),
+        'checkin_today': request.user.checkins.filter(created_at__date=timezone.localdate()).exists(),
         'next_reminder': request.user.reminders.filter(
             completed_at__isnull=True, scheduled_for__gte=now,
         ).first(),
