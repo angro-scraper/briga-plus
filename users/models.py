@@ -5,7 +5,7 @@ from django.db import models
 class PrivacyConsent(models.Model):
     """Dokaz da je korisnik prihvatio aktuelnu politiku privatnosti."""
 
-    POLICY_VERSION = '2026-10-10'
+    POLICY_VERSION = '2026-10-13'
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='privacy_consent')
     policy_version = models.CharField(max_length=32, default=POLICY_VERSION)
     accepted_at = models.DateTimeField(auto_now_add=True)
