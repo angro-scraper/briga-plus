@@ -35,7 +35,11 @@ class Command(BaseCommand):
         Membership.objects.update_or_create(user=users['mama'], family=family, defaults={'role': Membership.Role.SENIOR, 'alert_after_minutes': 180})
         Membership.objects.update_or_create(user=users['ana'], family=family, defaults={'role': Membership.Role.CAREGIVER})
         now = timezone.now()
-        CheckIn.objects.get_or_create(user=users['mama'], created_at__date=now.date(), defaults={'note': 'Dobro sam, hvala.'})
+        # Više potvrda istog dana je dozvoljeno u aplikaciji. Zato ne koristimo
+        # get_or_create sa datumskim filterom: on podiže MultipleObjectsReturned
+        # kada demo komandu ponovo pokrenemo nad bazom koja već ima više potvrda.
+        if not CheckIn.objects.filter(user=users['mama'], created_at__date=now.date()).exists():
+            CheckIn.objects.create(user=users['mama'], note='Dobro sam, hvala.')
         self.ensure_reminder(users['mama'], 'Jutarnja terapija', {'kind': Reminder.Kind.MEDICINE, 'scheduled_for': now.replace(hour=9, minute=0, second=0, microsecond=0), 'repeat_daily': True, 'dosage': '1 tableta od 5 mg', 'instructions': 'Posle doručka'})
         self.ensure_reminder(users['mama'], 'Kontrola kod kardiologa', {'kind': Reminder.Kind.APPOINTMENT, 'scheduled_for': now + timedelta(days=4)})
         CareTask.objects.get_or_create(family=family, title='Pozvati mamu posle ručka', defaults={'assignee': users['ana'], 'due_at': now + timedelta(hours=3)})

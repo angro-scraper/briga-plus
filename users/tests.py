@@ -818,4 +818,17 @@ class DashboardFlowTests(TestCase):
         self.assertTrue(owner.is_superuser)
         self.assertTrue(owner.check_password('bezbedna-lozinka-123'))
 
+    def test_seed_demo_is_idempotent_with_multiple_daily_checkins(self):
+        call_command('seed_demo')
+        mama = User.objects.get(username='mama')
+        CheckIn.objects.create(user=mama, note='Druga današnja potvrda.')
+        before = CheckIn.objects.filter(user=mama, created_at__date=timezone.localdate()).count()
+
+        call_command('seed_demo')
+
+        self.assertEqual(
+            CheckIn.objects.filter(user=mama, created_at__date=timezone.localdate()).count(),
+            before,
+        )
+
 # Create your tests here.
