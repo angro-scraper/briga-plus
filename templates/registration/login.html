@@ -1,5 +1,33 @@
 <!doctype html>
-<html lang="sr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d553d">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20261010a"><title>Prijava | Briga+</title></head>
-<body class="auth auth-login"><main><div class="auth-brand"><img src="/static/briga-mark.svg" alt="Briga+"><strong>Briga<span>+</span></strong></div><p class="eyebrow">DOBRO DOŠLI</p><h2>Prijavite se u porodični prostor.</h2><p>Mirnija svakodnevica za celu porodicu.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button>Prijavi se</button></form><p>Novi ste? <a href="/registracija/">Napravite nalog</a></p></main><script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20261010a"></script>
-</body></html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#4A6741">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20261010a">
+  <link rel="stylesheet" href="/static/figma-final.css?v=20261021f5">
+  <title>Prijava | Briga+</title>
+</head>
+<body>
+  <main class="auth-page management-auth">
+    <section class="auth-story">
+      <a class="brand" href="/"><span class="logo-mark"><img src="/static/briga-mark.svg" alt=""></span><span>Briga<span class="brand-plus">+</span></span></a>
+      <div><span class="story-pill">♥ Briga+ Upravljanje</span><h1>Briga je lakša kada su svi povezani.</h1><p>Jedno sigurno mesto za porodice, domove za stare i profesionalne timove kućne nege.</p><div class="trust-row"><span>✓ Bezbedno</span><span>✓ Pregledno</span><span>✓ U realnom vremenu</span></div></div>
+      <a class="auth-exit" href="/registracija/">Napravite novi nalog</a>
+    </section>
+    <section class="auth-form">
+      <div class="mobile-logo"><a class="brand" href="/"><span class="logo-mark"><img src="/static/briga-mark.svg" alt=""></span><span>Briga<span class="brand-plus">+</span></span></a></div>
+      <div class="auth-box"><p class="eyebrow">BRIGA+ UPRAVLJANJE</p><h1>Prijavite se</h1><p>Pristup porodičnom ili poslovnom panelu.</p>
+        <form method="post" class="figma-auth-form">{% csrf_token %}
+          {% if form.non_field_errors %}<div class="auth-errors">{{ form.non_field_errors }}</div>{% endif %}
+          {% for field in form %}<label>{{ field.label }}{{ field }}{% if field.errors %}<small class="auth-errors">{{ field.errors|striptags }}</small>{% endif %}</label>{% endfor %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+          <button class="primary-action auth-submit" type="submit">Prijavi se <span>→</span></button>
+        </form>
+        <p class="auth-toggle">Nemate nalog? <a href="/registracija/">Registrujte se</a></p>
+      </div>
+    </section>
+  </main>
+  <script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20261010a"></script>
+</body>
+</html>

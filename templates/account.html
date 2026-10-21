@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="sr-Latn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d553d">
-  <link rel="stylesheet" href="/static/briga-v2.css?v=20261010a"><title>Moj nalog | Briga+</title></head>
-<body class="legal-page"><main class="legal-shell account-shell">
-  <a class="brand legal-brand" href="/"><span class="brand-mark"><img src="/static/briga-mark.svg" alt=""></span><span class="brand-word">Briga<span class="brand-plus">+</span></span></a>
-  {% for message in messages %}<div class="flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
-  <p class="eyebrow">PODEŠAVANJA NALOGA</p><h1>Privatnost i podaci</h1>
-  <section><h2>Politika privatnosti</h2><p>{% if consent and consent.policy_version == policy_version %}Prihvatili ste aktuelnu politiku {{ consent.accepted_at|date:"d.m.Y. H:i" }}.{% else %}Politika je ažurirana i čeka vašu potvrdu.{% endif %}</p><p><a href="/politika-privatnosti/" target="_blank" rel="noopener">Otvori Politiku privatnosti</a> · <a href="/uslovi-koriscenja/" target="_blank" rel="noopener">Otvori Uslove korišćenja</a></p>{% if not consent or consent.policy_version != policy_version %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="accept_privacy"><button class="button primary">Pročitao/la sam i prihvatam</button></form>{% endif %}</section>
-  <section><h2>Obaveštenja</h2><p>Na ovom nalogu postoje {{ push_subscriptions }} web uređaja i {{ native_push_devices }} Android/iPhone uređaja za push obaveštenja. Uključivanje radi se u prozoru „Obaveštenja” na svakom uređaju posebno.</p></section>
-  <section class="danger-zone"><h2>Brisanje naloga</h2><p>Ova radnja trajno uklanja vaš nalog i podatke koji pripadaju nalogu. Ako ste jedini administrator porodice, prvo prenesite upravljanje drugom članu porodice.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_account"><label>Za potvrdu upišite <strong>OBRIŠI</strong><input name="confirmation" autocomplete="off" required></label><button class="button danger" type="submit">Trajno obriši moj nalog</button></form></section>
-  <div class="legal-links"><a href="/">Nazad na panel</a> · <form class="logout-form" method="post" action="{% url 'odjava' %}">{% csrf_token %}<button class="link-button" type="submit">Odjava</button></form></div>
-</main><script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20261010a"></script>
-</body></html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4A6741">
+  <link rel="stylesheet" href="/static/briga-v2.css?v=20261010a"><link rel="stylesheet" href="/static/figma-final.css?v=20261021f5"><title>Moj nalog | Briga+</title>
+</head>
+<body class="figma-account-page">
+  <div class="app">
+    <header class="app-header"><div class="header-inner"><a class="brand" href="/"><span class="logo-mark"><img src="/static/briga-mark.svg" alt=""></span><span>Briga<span class="brand-plus">+</span></span></a><span class="product-name">Moj nalog</span><div class="header-actions"><a class="outline-action" href="/">← Nazad na panel</a></div></div></header>
+    <main class="main-content"><div class="page detail-page account-detail-page">
+      {% for message in messages %}<div class="flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+      <div class="detail-header"><a class="back-button" href="/" aria-label="Nazad">←</a><div><p class="eyebrow">PODEŠAVANJA NALOGA</p><h1>Privatnost i podaci</h1><p>Bezbednost, obaveštenja i kontrola naloga.</p></div></div>
+      <div class="settings-grid account-settings-grid">
+        <section class="panel-card"><span class="feature-icon green">✓</span><div><h2>Politika privatnosti</h2><p>{% if consent and consent.policy_version == policy_version %}Prihvatili ste aktuelnu politiku {{ consent.accepted_at|date:"d.m.Y. H:i" }}.{% else %}Politika je ažurirana i čeka vašu potvrdu.{% endif %}</p><p><a href="/politika-privatnosti/" target="_blank" rel="noopener">Politika privatnosti</a> · <a href="/uslovi-koriscenja/" target="_blank" rel="noopener">Uslovi korišćenja</a></p>{% if not consent or consent.policy_version != policy_version %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="accept_privacy"><button class="primary-action">Pročitao/la sam i prihvatam</button></form>{% endif %}</div></section>
+        <section class="panel-card"><span class="feature-icon yellow">●</span><div><h2>Obaveštenja</h2><p>Na nalogu postoji {{ push_subscriptions }} web uređaja i {{ native_push_devices }} Android/iPhone uređaja za push obaveštenja.</p><small>Uključivanje se radi u prozoru „Obaveštenja” na svakom uređaju posebno.</small></div></section>
+        <section class="panel-card account-session-card"><span class="feature-icon slate">↪</span><div><h2>Sesija</h2><p>Odjavite ovaj uređaj kada ga više ne koristite.</p><form method="post" action="{% url 'odjava' %}">{% csrf_token %}<button class="secondary-action" type="submit">Odjava</button></form></div></section>
+        <section class="panel-card danger-zone"><span class="feature-icon red">!</span><div><h2>Brisanje naloga</h2><p>Ova radnja trajno uklanja vaš nalog i podatke koji pripadaju nalogu. Ako ste jedini administrator porodice, prvo prenesite upravljanje drugom članu.</p><form method="post" class="account-delete-form">{% csrf_token %}<input type="hidden" name="action" value="delete_account"><label>Za potvrdu upišite <strong>OBRIŠI</strong><input name="confirmation" autocomplete="off" required></label><button class="danger-action" type="submit">Trajno obriši moj nalog</button></form></div></section>
+      </div>
+    </div></main>
+  </div>
+  <script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20261010a"></script>
+</body>
+</html>

@@ -1,79 +1,46 @@
-<section class="family-mobile-home figma-family-home" id="danas" aria-label="Porodični panel">
-  <header class="figma-app-header">
-    <a class="figma-brand" href="/" aria-label="Briga+ početna"><img src="/static/briga-mark.svg" alt=""><span>Briga<b>+</b></span></a>
-    <span class="figma-product-name">Upravljanje</span>
-    <div class="figma-header-actions">
-      <button type="button" data-modal="alerts" aria-label="Obaveštenja"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#bell"></use></svg>{% if unread_alert_count %}<i>{{ unread_alert_count }}</i>{% endif %}</button>
-      <a href="/nalog/" aria-label="Moj nalog"><b>{{ user.first_name|default:user.username|slice:":1" }}</b></a>
-    </div>
-  </header>
-
-  <div class="figma-page">
-    <section class="figma-welcome">
-      <div><p class="figma-eyebrow">{% now "l, d. F" %}</p><h1>Dobro jutro, {{ user.first_name|default:user.username }}</h1><span>Evo kako je {{ care_person.first_name|default:care_person.username }} danas.</span></div>
-      <button type="button" data-modal="reminders"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar"></use></svg> Dodaj podsetnik</button>
-    </section>
-
-    <section class="figma-person-switcher" aria-label="Izbor čuvanog lica">
-      <div class="figma-person-label"><span>AKTIVNO ČUVANO LICE</span><strong>{{ care_person.first_name|default:care_person.username }}</strong></div>
-      <div class="figma-person-options">
-        {% for circle in care_circles %}
-          <a class="{% if circle.family_id == family.id %}is-active{% endif %}" href="/?family={{ circle.family_id }}">
-            <b>{% if circle.care_person %}{{ circle.care_person.user.first_name|default:circle.care_person.user.username|first|upper }}{% else %}+{% endif %}</b>
-            <span>{% if circle.care_person %}{{ circle.care_person.user.first_name|default:circle.care_person.user.username }}{% else %}Čeka prijavu{% endif %}</span>
-            {% if circle.family_id == family.id %}<svg class="ui-icon"><use href="/static/briga-ui-icons.svg#check-circle"></use></svg>{% endif %}
-          </a>
-        {% empty %}
-          <span class="figma-person-empty">Profil čuvanog lica još nije povezan.</span>
-        {% endfor %}
-        {% if membership.role == 'admin' %}<button type="button" data-modal="family"><span>＋</span> Dodaj lice</button>{% endif %}
-      </div>
-      {% if membership.role == 'admin' %}<button class="figma-qr-entry" type="button" data-modal="family"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg> QR povezivanje</button>{% endif %}
-    </section>
-
-    <button class="figma-status-card" type="button" data-modal="week">
-      <span class="figma-status-avatar">{{ care_person.first_name|default:care_person.username|slice:":1" }}<i></i></span>
-      <span class="figma-status-copy"><small>DANAŠNJI STATUS</small><strong>{% if last_checkin %}<i>✓</i> {{ care_person.first_name|default:care_person.username }} je dobro danas{% else %}Čekamo da se {{ care_person.first_name|default:care_person.username }} javi{% endif %}</strong><span>{% if last_checkin %}Potvrđeno u {{ last_checkin.created_at|date:"H:i" }}{% else %}Dnevna potvrda još nije stigla{% endif %}</span></span>
-      <span class="figma-status-link">Pogledaj detalje <svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></span>
-    </button>
-
-    <section class="figma-section">
-      <header><div><h2>Brzi pregled</h2><p>Najvažnije informacije na jednom mestu</p></div><span class="figma-live"><i></i> UŽIVO</span></header>
-      <div class="figma-stats-grid">
-        <button type="button" data-modal="week"><span class="green"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#check-circle"></use></svg></span><small>DOBRO SAM</small><b>{% if last_checkin %}{{ last_checkin.created_at|date:"H:i" }}{% else %}—{% endif %}</b></button>
-        <button type="button" data-modal="reminders"><span class="orange"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><small>TERAPIJA</small><b>{{ reminders|length }}</b></button>
-        <button type="button" data-modal="tasks"><span class="teal"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg></span><small>ZADACI</small><b>{{ care_week.open_tasks }}</b></button>
-        <button type="button" data-modal="health"><span class="gold"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg></span><small>BELEŠKE</small><b>{{ health_logs|length }}</b></button>
-        <button type="button" data-modal="health"><span class="rose"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pulse"></use></svg></span><small>ZDRAVLJE</small><b>Pregled</b></button>
-        <button type="button" data-modal="devices"><span class="purple"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#activity"></use></svg></span><small>UREĐAJI</small><b>—</b></button>
-      </div>
-    </section>
-
-    <section class="figma-section">
-      <header><div><h2>Sve na jednom mestu</h2><p>Brzo pronađite ono što vam treba</p></div></header>
-      <div class="figma-feature-grid">
-        <button type="button" data-modal="health"><span class="green"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#heart"></use></svg></span><span><b>Zdravlje</b><small>Dnevnik, merenja i nalazi</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="reminders"><span class="orange"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><span><b>Terapija</b><small>Lekovi i podsetnici</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="tasks"><span class="teal"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg></span><span><b>Zadaci</b><small>{{ care_week.open_tasks }} otvoreno danas</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="chat"><span class="blue"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg></span><span><b>Porodični chat</b><small>Poruke i glasovne poruke</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="sos-detail"><span class="rose"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><span><b>SOS događaji</b><small>Lokacija, ruta i odgovor porodice</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="alerts"><span class="gold"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#bell"></use></svg></span><span><b>Obaveštenja</b><small>{{ unread_alert_count }} nepročitanih</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="contacts"><span class="purple"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><span><b>Hitni kontakti</b><small>Porodica i lekari</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="documents"><span class="slate"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg></span><span><b>Dokumenti</b><small>Nalazi, fotografije i PDF</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="visits"><span class="pink"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar"></use></svg></span><span><b>Posete i pozivi</b><small>Raspored porodice</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <button type="button" data-modal="family"><span class="green"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#users"></use></svg></span><span><b>Porodica</b><small>{{ members|length }} povezanih članova</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
-        <a href="/nalog/"><span class="slate"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#settings"></use></svg></span><span><b>Podešavanja</b><small>Profil i pristupačnost</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></a>
-      </div>
-    </section>
-
-    <button class="figma-sos-monitor" type="button" data-modal="sos-detail"><span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><span><small>SOS CENTAR PORODICE</small><b>{% if sos_active %}Aktivan SOS — otvorite lokaciju{% else %}Trenutno nema aktivnog SOS-a{% endif %}</b></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+<div class="app family briga-figma-app" id="danas">
+  <header class="app-header"><div class="header-inner">
+    <a class="brand" href="/" aria-label="Briga+ početna"><span class="logo-mark"><img src="/static/briga-mark.svg" alt=""></span><span>Briga<span class="brand-plus">+</span></span></a>
+    <span class="product-name">Upravljanje</span>
+    <div class="header-actions"><button class="icon-button notification-button" type="button" data-modal="alerts" aria-label="Obaveštenja"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#bell"></use></svg>{% if unread_alert_count %}<i>{{ unread_alert_count }}</i>{% endif %}</button><a class="profile-button" href="/nalog/"><span class="avatar avatar-initial">{{ user.first_name|default:user.username|slice:":1"|upper }}</span><span>{{ user.first_name|default:user.username }}<small>Porodični nalog</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></a></div>
+  </div></header>
+  <div class="app-body">
+    <aside class="sidebar"><div><p class="eyebrow">PORODIČNI PANEL</p><nav>
+      <a class="active" href="#danas"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#home"></use></svg><span>Početna</span></a>
+      <button type="button" data-modal="health"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#heart"></use></svg><span>Zdravlje</span></button>
+      <button type="button" data-modal="tasks"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg><span>Zadaci</span></button>
+      <button type="button" data-modal="chat"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg><span>Poruke</span></button>
+      <button type="button" data-modal="all-tools"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#settings"></use></svg><span>Meni</span></button>
+    </nav></div><div class="sidebar-support"><span class="support-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><strong>Treba vam pomoć?</strong><span>Tu smo svakog dana</span><button type="button" data-modal="contacts">Otvorite kontakte</button></div></aside>
+    <main class="main-content"><div class="page family-home">
+      <section class="welcome-row"><div><p class="eyebrow">{% now "l, d. F" %}</p><h1>Dobro jutro, {{ user.first_name|default:user.username }}</h1><p>Evo kako je {{ care_person.first_name|default:care_person.username }} danas.</p></div><button class="outline-action" type="button" data-modal="reminders"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar"></use></svg> Dodaj podsetnik</button></section>
+      <section class="person-switcher"><div class="person-switcher-copy"><span class="soft-label">AKTIVNO ČUVANO LICE</span><strong>{{ care_person.first_name|default:care_person.username }}</strong></div><div class="person-options">
+        {% for circle in care_circles %}<a class="{% if circle.family_id == family.id %}active{% endif %}" href="/?family={{ circle.family_id }}"><span class="initial-avatar">{% if circle.care_person %}{{ circle.care_person.user.first_name|default:circle.care_person.user.username|slice:":1"|upper }}{% else %}+{% endif %}</span><span>{% if circle.care_person %}{{ circle.care_person.user.first_name|default:circle.care_person.user.username }}{% else %}Čeka prijavu{% endif %}</span>{% if circle.family_id == family.id %}<svg class="ui-icon"><use href="/static/briga-ui-icons.svg#check-circle"></use></svg>{% endif %}</a>{% empty %}<span class="person-empty">Profil čuvanog lica još nije povezan.</span>{% endfor %}
+        {% if membership.role == 'admin' %}<button class="add-person" type="button" data-modal="family">＋ Dodaj lice</button>{% endif %}</div>{% if membership.role == 'admin' %}<button class="qr-manage" type="button" data-modal="family"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg> QR povezivanje</button>{% endif %}</section>
+      <button class="status-card" type="button" data-modal="week"><span class="status-person"><span class="avatar large avatar-initial">{{ care_person.first_name|default:care_person.username|slice:":1"|upper }}</span><span class="online-dot"></span></span><span class="status-copy"><span class="soft-label">DANAŠNJI STATUS</span><h2>{% if last_checkin %}<i>✓</i> {{ care_person.first_name|default:care_person.username }} je dobro danas{% else %}Čekamo da se {{ care_person.first_name|default:care_person.username }} javi{% endif %}</h2><p>{% if last_checkin %}Potvrđeno u {{ last_checkin.created_at|date:"H:i" }}{% else %}Dnevna potvrda još nije stigla{% endif %}</p></span><span class="status-link">Pogledaj detalje <svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></span></button>
+      <section><div class="section-heading"><div><h2>Brzi pregled</h2><p>Najvažnije informacije na jednom mestu</p></div><span class="live-pill"><i></i> UŽIVO</span></div><div class="stats-grid">
+        <button class="stat success" type="button" data-modal="week"><span class="stat-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#check-circle"></use></svg></span><span>DOBRO SAM</span><strong>{% if last_checkin %}{{ last_checkin.created_at|date:"H:i" }}{% else %}—{% endif %}</strong></button>
+        <button class="stat medicine" type="button" data-modal="reminders"><span class="stat-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><span>TERAPIJA</span><strong>{{ reminders|length }}</strong></button>
+        <button class="stat aqua" type="button" data-modal="tasks"><span class="stat-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg></span><span>ZADACI</span><strong>{{ care_week.open_tasks }}</strong></button>
+        <button class="stat sand" type="button" data-modal="health"><span class="stat-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg></span><span>BELEŠKE</span><strong>{{ health_logs|length }}</strong></button>
+        <button class="stat rose" type="button" data-modal="health"><span class="stat-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pulse"></use></svg></span><span>PULS</span><strong>—</strong></button>
+        <button class="stat lavender" type="button" data-modal="devices"><span class="stat-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#activity"></use></svg></span><span>KORACI</span><strong>—</strong></button>
+      </div></section>
+      <section><div class="section-heading"><div><h2>Sve na jednom mestu</h2><p>Brzo pronađite ono što vam treba</p></div></div><div class="feature-grid">
+        <button class="feature-card" type="button" data-modal="health"><span class="feature-icon green"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#heart"></use></svg></span><span><strong>Zdravlje</strong><small>Dnevnik, merenja i nalazi</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="reminders"><span class="feature-icon orange"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#pill"></use></svg></span><span><strong>Terapija</strong><small>Lekovi i podsetnici</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="tasks"><span class="feature-icon teal"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg></span><span><strong>Zadaci</strong><small>{{ care_week.open_tasks }} otvoreno danas</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="chat"><span class="feature-icon blue"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg></span><span><strong>Porodični chat</strong><small>Poruke i glasovne poruke</small></span>{% if unread_alert_count %}<i class="count">{{ unread_alert_count }}</i>{% endif %}<svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="sos-detail"><span class="feature-icon red"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><span><strong>SOS događaji</strong><small>Istorija i tačne lokacije</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="alerts"><span class="feature-icon yellow"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#bell"></use></svg></span><span><strong>Obaveštenja</strong><small>{{ unread_alert_count }} nepročitanih</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="contacts"><span class="feature-icon purple"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><span><strong>Hitni kontakti</strong><small>Porodica i lekari</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="documents"><span class="feature-icon slate"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#journal"></use></svg></span><span><strong>Dokumenti</strong><small>Nalazi, fotografije i PDF</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="visits"><span class="feature-icon pink"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar"></use></svg></span><span><strong>Posete i pozivi</strong><small>Raspored porodice</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <button class="feature-card" type="button" data-modal="family"><span class="feature-icon green"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#users"></use></svg></span><span><strong>Porodica</strong><small>{{ members|length }} povezanih članova</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></button>
+        <a class="feature-card" href="/nalog/"><span class="feature-icon slate"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#settings"></use></svg></span><span><strong>Podešavanja</strong><small>Profil i pristupačnost</small></span><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></a>
+      </div></section>
+      <button class="sos-alert {% if sos_active %}is-active{% endif %}" type="button" data-modal="sos-detail"><span class="sos-alert-icon"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#phone"></use></svg></span><span><small>SOS CENTAR PORODICE</small><strong>{% if sos_active %}Aktivan SOS — otvorite lokaciju{% else %}Trenutno nema aktivnog SOS-a{% endif %}</strong></span><span class="alert-action">Otvori prikaz <svg class="ui-icon"><use href="/static/briga-ui-icons.svg#chevron-right"></use></svg></span></button>
+    </div></main>
   </div>
-
-  <nav class="figma-bottom-nav" aria-label="Donja navigacija">
-    <a href="#danas"><svg class="ui-icon is-filled"><use href="/static/briga-ui-icons.svg#home"></use></svg><span>Početna</span></a>
-    <button type="button" data-modal="health"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#heart"></use></svg><span>Zdravlje</span></button>
-    <button type="button" data-modal="tasks"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg><span>Zadaci</span></button>
-    <button type="button" data-modal="chat"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg><span>Poruke</span></button>
-    <button type="button" data-modal="all-tools"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg><span>Meni</span></button>
-  </nav>
-</section>
+  <nav class="bottom-nav"><a class="active" href="#danas"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#home"></use></svg><span>Početna</span></a><button type="button" data-modal="health"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#heart"></use></svg><span>Zdravlje</span></button><button type="button" data-modal="tasks"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#calendar-check"></use></svg><span>Zadaci</span></button><button type="button" data-modal="chat"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#message"></use></svg><span>Poruke</span></button><button type="button" data-modal="all-tools"><svg class="ui-icon"><use href="/static/briga-ui-icons.svg#grid"></use></svg><span>Meni</span></button></nav>
+</div>
