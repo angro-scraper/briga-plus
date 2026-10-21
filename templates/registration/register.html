@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#4A6741">
   <link rel="stylesheet" href="/static/briga-v2.css?v=20261010a">
-  <link rel="stylesheet" href="/static/figma-final.css?v=20261021f5">
+  <link rel="stylesheet" href="/static/figma-final.css?v=20261021f6">
   <title>Nalog | Briga+</title>
 </head>
 <body>
@@ -19,16 +19,35 @@
       <div class="mobile-logo"><a class="brand" href="/"><span class="logo-mark"><img src="/static/briga-mark.svg" alt=""></span><span>Briga<span class="brand-plus">+</span></span></a></div>
       <div class="auth-box register-box"><p class="eyebrow">BRIGA+ UPRAVLJANJE</p><h1>Kreirajte nalog</h1><p>Unesite podatke vlasnika porodičnog prostora.</p>
         <div class="account-types"><button class="active" type="button"><span>♥</span><span><strong>Porodični nalog</strong><small>Za porodicu i bliske osobe</small></span></button><button type="button" disabled><span>▣</span><span><strong>Firma ili ustanova</strong><small>Uskoro u posebnom panelu</small></span></button></div>
-        <form method="post" class="figma-auth-form register-form">{% csrf_token %}
+        <form method="post" class="figma-auth-form register-form" id="registration-form">{% csrf_token %}
           {% if form.non_field_errors %}<div class="auth-errors">{{ form.non_field_errors }}</div>{% endif %}
           <div class="form-grid">{% for field in form %}<label class="{% if field.name == 'address' or field.name == 'privacy_consent' %}full{% endif %}">{{ field.label }}{{ field }}{% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}{% if field.errors %}<small class="auth-errors">{{ field.errors|striptags }}</small>{% endif %}</label>{% endfor %}</div>
           <p class="auth-legal">Registracijom potvrđujete da ste pročitali <a href="/politika-privatnosti/" target="_blank" rel="noopener">Politiku privatnosti</a> i <a href="/uslovi-koriscenja/" target="_blank" rel="noopener">Uslove korišćenja</a>.</p>
-          <button class="primary-action auth-submit" type="submit">Kreiraj nalog <span>→</span></button>
+          <button class="primary-action auth-submit" type="submit" id="registration-submit">Kreiraj nalog <span>→</span></button>
         </form>
         <p class="auth-toggle">Već imate nalog? <a href="/prijava/">Prijavite se</a></p>
       </div>
     </section>
   </main>
   <script src="/static/deep-links.js?v=20260803"></script><script src="/static/briga-v2.js?v=20261010a"></script>
+  <script>
+    (() => {
+      const form = document.getElementById('registration-form');
+      const submit = document.getElementById('registration-submit');
+      if (!form || !submit) return;
+      let sending = false;
+      form.addEventListener('submit', event => {
+        if (sending) {
+          event.preventDefault();
+          return;
+        }
+        if (!form.checkValidity()) return;
+        sending = true;
+        submit.disabled = true;
+        submit.classList.add('is-loading');
+        submit.innerHTML = 'Kreiramo nalog…';
+      });
+    })();
+  </script>
 </body>
 </html>

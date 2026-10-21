@@ -49,7 +49,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/service-worker.js')
         self.assertEqual(response.status_code, 200)
         self.assertIn('no-cache', response['Cache-Control'])
-        self.assertContains(response, "briga-plus-release-20261021f5")
+        self.assertContains(response, "briga-plus-release-20261021f6")
         self.assertContains(response, "/static/sos-location.js?v=20260801d1")
         self.assertContains(response, "briga-notification-icon-512.png?v=20260811")
         self.assertContains(response, "briga-notification-badge-96.png?v=20260811")
@@ -76,7 +76,7 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
         self.assertContains(response, '/static/briga-v2.css?v=20261010a')
-        self.assertContains(response, '/static/figma-final.css?v=20261021f5')
+        self.assertContains(response, '/static/figma-final.css?v=20261021f6')
         self.assertContains(response, '/static/briga-v2.js?v=20261010a')
         self.assertContains(response, '<script defer src="/static/chat-live.js?v=20260807"></script>')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
@@ -317,6 +317,7 @@ class DashboardFlowTests(TestCase):
         self.assertFalse(NativePushDevice.objects.filter(pk=device.pk).exists())
 
     def test_registration_saves_required_contact_information(self):
+        self.client.logout()
         response = self.client.post('/registracija/', {
             'first_name': 'Ana', 'last_name': 'Petrović', 'email': 'ana@example.com',
             'phone': '+381 64 123 4567', 'address': 'Kralja Petra 12, Beograd',
@@ -331,6 +332,7 @@ class DashboardFlowTests(TestCase):
         self.assertEqual(user.contact_profile.address, 'Kralja Petra 12, Beograd')
 
     def test_registration_rejects_duplicate_email(self):
+        self.client.logout()
         User.objects.create_user('postojeci', email='ana@example.com', password='Bezbedna-lozinka-123')
         response = self.client.post('/registracija/', {
             'first_name': 'Nova', 'last_name': 'Osoba', 'email': 'ANA@example.com',
@@ -339,6 +341,28 @@ class DashboardFlowTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Nalog sa ovom e-mail adresom već postoji.')
+
+    def test_registration_duplicate_post_after_success_opens_home(self):
+        self.client.logout()
+        payload = {
+            'first_name': 'Ana', 'last_name': 'Petrović', 'email': 'ana.dupli@example.com',
+            'phone': '+381 64 123 4567', 'address': 'Kralja Petra 12, Beograd',
+            'username': 'ana.dupli', 'password1': 'Bezbedna-lozinka-123',
+            'password2': 'Bezbedna-lozinka-123', 'privacy_consent': 'on',
+        }
+        first = self.client.post('/registracija/', payload)
+        second = self.client.post('/registracija/', payload)
+
+        self.assertRedirects(first, '/')
+        self.assertRedirects(second, '/')
+        self.assertEqual(User.objects.filter(username='ana.dupli').count(), 1)
+
+    def test_authenticated_registration_page_opens_home(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get('/registracija/')
+
+        self.assertRedirects(response, '/')
 
     def test_logout_uses_post_and_returns_to_login(self):
         response = self.client.post('/odjava/')
@@ -668,7 +692,7 @@ class DashboardFlowTests(TestCase):
         self.assertNotContains(response, 'id="picture-text-toggle"')
         self.assertContains(response, 'Pošalji porodici odmah')
         self.assertContains(response, 'Zdravo, ja sam Sophie')
-        self.assertContains(response, '/static/figma-final.css?v=20261021f5')
+        self.assertContains(response, '/static/figma-final.css?v=20261021f6')
         self.assertContains(response, '<script defer src="/static/mobile-enhancements.js?v=20260816"></script>')
 
     def test_cared_person_can_add_pdf_to_personal_health_diary(self):

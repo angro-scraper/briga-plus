@@ -255,6 +255,11 @@ class BrigaLoginView(LoginView):
 
 
 def register(request):
+    # Android WebView ponekad ponovi POST neposredno nakon uspešne prijave.
+    # Ako je prvi zahtev već napravio nalog i prijavio korisnika, drugi zahtev
+    # mora samo da nastavi na početnu umesto da prikaže lažnu grešku o duplikatu.
+    if request.user.is_authenticated:
+        return redirect('pocetna')
     if request.method == 'POST':
         form = BrigaRegistrationForm(request.POST)
         if form.is_valid():
