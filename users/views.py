@@ -254,6 +254,12 @@ class BrigaLoginView(LoginView):
         return response
 
 
+@never_cache
+def product_launcher(request):
+    """Početni izbor između aplikacije za čuvano lice i upravljanja brigom."""
+    return render(request, 'product_launcher.html')
+
+
 def register(request):
     # Android WebView ponekad ponovi POST neposredno nakon uspešne prijave.
     # Ako je prvi zahtev već napravio nalog i prijavio korisnika, drugi zahtev

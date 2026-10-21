@@ -3,12 +3,19 @@
   "appName": "Briga+",
   "webDir": "web",
   "server": {
-    "url": "https://briga-plus.onrender.com",
+    "url": "https://briga-plus.onrender.com/izbor/",
     "cleartext": false,
     "allowNavigation": ["briga-plus.onrender.com"]
   },
   "android": {
     "allowMixedContent": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "hidden": true,
+      "insetsHandling": "disable",
+      "style": "DARK"
+    }
   },
   "ios": {
     "contentInset": "always"

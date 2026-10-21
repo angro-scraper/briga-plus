@@ -72,6 +72,20 @@ class DashboardFlowTests(TestCase):
         response = self.client.get('/')
         self.assertRedirects(response, '/prijava/?next=/')
 
+    def test_product_launcher_matches_the_two_figma_apps(self):
+        self.client.logout()
+
+        response = self.client.get('/izbor/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dve aplikacije.')
+        self.assertContains(response, 'Briga+ Moj dan')
+        self.assertContains(response, 'href="/moj-dan/"')
+        self.assertContains(response, 'Briga+ Upravljanje')
+        self.assertContains(response, 'href="/"')
+        self.assertContains(response, 'ZA PORODICE I ORGANIZACIJE')
+        self.assertContains(response, '/static/figma-final.css?v=20261021f7')
+
     def test_dashboard_never_uses_a_stale_page_cache(self):
         response = self.client.get('/')
         self.assertIn('no-store', response['Cache-Control'])
